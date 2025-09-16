@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
+import { AuthProvider } from './src/contexts/AuthContext';
 import MapScreen from './src/screens/MapScreen';
 import RestaurantListScreen from './src/screens/ResturantListScreen'; // FIXED: Corretto import
 import RestaurantDetailScreen from './src/screens/ResturantDetailScreen'; // FIXED: Corretto import
@@ -53,28 +54,30 @@ function MainTabs() {
 // App principale con Stack Navigator
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen 
-          name="MainTabs" 
-          component={MainTabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen 
-          name="RestaurantDetail" 
-          component={RestaurantDetailScreen}
-          options={({ route }) => ({
-            title: route.params.restaurant.name,
-            headerStyle: {
-              backgroundColor: '#FF6B6B',
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          })}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AuthProvider>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Screen 
+            name="MainTabs" 
+            component={MainTabs}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="RestaurantDetail" 
+            component={RestaurantDetailScreen}
+            options={({ route }) => ({
+              title: route.params.restaurant.name,
+              headerStyle: {
+                backgroundColor: '#FF6B6B',
+              },
+              headerTintColor: '#fff',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            })}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
