@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
+  TextInput,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { placesAutocomplete, getPlaceDetails, geocodeLocation } from '../services/googlePlaces';
+import { useLocationSelection } from '../contexts/LocationContext';
 
 export interface FilterOptions {
   cuisineTypes: string[];
@@ -17,6 +20,7 @@ export interface FilterOptions {
   maxDistance: number;
   showOnlyOpen: boolean;
   sortBy: 'rating' | 'distance' | 'price';
+  locationQuery?: string; // opzionale: usa geocoding quando presente
 }
 
 interface FilterModalProps {
@@ -29,11 +33,22 @@ interface FilterModalProps {
 const CUISINE_OPTIONS = [
   'Tutti',
   'Pizzeria',
-  'Tradizionale', 
-  'Fine Dining',
+  'Panini',
+  'Burger',
+  'Sushi',
+  'Kebab',
+  'Italiano',
   'Trattoria',
   'Seafood',
   'Vegetariana',
+  'Vegano',
+  'Cinese',
+  'Giapponese',
+  'Indiano',
+  'Messicano',
+  'Mediterranea',
+  'BBQ',
+  'Steakhouse',
   'Fast Food',
   'Dessert',
 ];
@@ -51,9 +66,40 @@ export default function FilterModal({
   currentFilters 
 }: FilterModalProps) {
   const [filters, setFilters] = useState<FilterOptions>(currentFilters);
+  const { setManualLocation, clearLocation, locationQuery } = useLocationSelection();
+  const [queryInput, setQueryInput] = useState<string>(currentFilters.locationQuery || '');
+  const [suggestions, setSuggestions] = useState<{ description: string; placeId: string }[]>([]);
+  const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
 
-  const handleApply = () => {
+  useEffect(() => {
+    setQueryInput(currentFilters.locationQuery || locationQuery || '');
+  }, [currentFilters.locationQuery, locationQuery]);
+
+  useEffect(() => {
+    if (!queryInput || queryInput.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    if (typingTimer) clearTimeout(typingTimer);
+    const t = setTimeout(async () => {
+      const s = await placesAutocomplete(queryInput);
+      setSuggestions(s);
+    }, 250);
+    setTypingTimer(t);
+  }, [queryInput]);
+
+  const handleApply = async () => {
     console.log('🔍 Applicando filtri:', filters);
+    // Sincronizza LocationContext per coerenza mappa/lista
+    const q = (filters.locationQuery || '').trim();
+    if (q) {
+      const geo = await geocodeLocation(q);
+      if (geo) {
+        setManualLocation(q, { latitude: geo.latitude, longitude: geo.longitude, formattedAddress: geo.formattedAddress });
+      }
+    } else {
+      clearLocation();
+    }
     onApplyFilters(filters);
     onClose();
   };
@@ -66,6 +112,7 @@ export default function FilterModal({
       maxDistance: 5000,
       showOnlyOpen: false,
       sortBy: 'rating',
+      locationQuery: '',
     };
     setFilters(resetFilters);
   };
@@ -105,13 +152,25 @@ export default function FilterModal({
     const icons: { [key: string]: string } = {
       'Tutti': '🍽️',
       'Pizzeria': '🍕',
-      'Tradizionale': '🇮🇹',
-      'Fine Dining': '🍴',
+      'Panini': '🥪',
+      'Burger': '🍔',
+      'Sushi': '🍣',
+      'Kebab': '🥙',
+      'Italiano': '🇮🇹',
       'Trattoria': '🍝',
       'Seafood': '🐟',
       'Vegetariana': '🥗',
-      'Fast Food': '🍔',
+      'Vegano': '🌱',
+      'Cinese': '🥡',
+      'Giapponese': '🗾',
+      'Indiano': '🍛',
+      'Messicano': '🌮',
+      'Mediterranea': '🌊',
+      'BBQ': '🍖',
+      'Steakhouse': '🥩',
+      'Fast Food': '🍟',
       'Dessert': '🍰',
+      'Asiatica': '🍜',
     };
     return icons[cuisine] || '🍽️';
   };
@@ -241,6 +300,54 @@ export default function FilterModal({
             </View>
           </View>
 
+          {/* Località manuale */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>📍 Località</Text>
+            <Text style={styles.helperText}>Inserisci città/indirizzo oppure lascia vuoto per usare la tua posizione</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Es. Napoli, Italia"
+              value={queryInput}
+              onChangeText={(text) => {
+                setQueryInput(text);
+                setFilters(prev => ({ ...prev, locationQuery: text }));
+              }}
+              autoCorrect={false}
+              autoCapitalize="none"
+              placeholderTextColor="#999"
+            />
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionsBox}>
+                {suggestions.map(s => (
+                  <TouchableOpacity
+                    key={s.placeId}
+                    style={styles.suggestionItem}
+                    onPress={async () => {
+                      const details = await getPlaceDetails(s.placeId);
+                      if (details) {
+                        setManualLocation(s.description, {
+                          latitude: details.latitude,
+                          longitude: details.longitude,
+                          formattedAddress: details.formattedAddress,
+                        });
+                        setQueryInput(s.description);
+                        setFilters(prev => ({ ...prev, locationQuery: s.description }));
+                        setSuggestions([]);
+                      }
+                    }}
+                  >
+                    <Text style={styles.suggestionText}>{s.description}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {!!filters.locationQuery && (
+              <TouchableOpacity onPress={() => { setFilters(prev => ({ ...prev, locationQuery: '' })); setQueryInput(''); setSuggestions([]); clearLocation(); }} style={styles.clearLocBtn}>
+                <Text style={styles.clearLocText}>Usa posizione attuale</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Distanza Massima */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>📍 Distanza Massima</Text>
@@ -248,8 +355,8 @@ export default function FilterModal({
             <Slider
               style={styles.slider}
               minimumValue={500}
-              maximumValue={10000}
-              step={500}
+              maximumValue={200000}
+              step={1000}
               value={filters.maxDistance}
               onValueChange={(value) => 
                 setFilters(prev => ({ ...prev, maxDistance: value }))
@@ -260,7 +367,7 @@ export default function FilterModal({
             />
             <View style={styles.sliderLabels}>
               <Text style={styles.sliderLabel}>500m</Text>
-              <Text style={styles.sliderLabel}>10km</Text>
+              <Text style={styles.sliderLabel}>200km</Text>
             </View>
           </View>
 
@@ -416,6 +523,47 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     textAlign: 'center',
     marginBottom: 15,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearLocBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  clearLocText: {
+    color: '#FF6B6B',
+    fontWeight: '600',
+  },
+  suggestionsBox: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  suggestionItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f2',
+  },
+  suggestionText: {
+    color: '#333',
+    fontSize: 14,
   },
   sliderContainer: {
     flexDirection: 'row',

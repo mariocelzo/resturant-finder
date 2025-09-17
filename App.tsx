@@ -4,22 +4,27 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { LocationProvider } from './src/contexts/LocationContext';
 import MapScreen from './src/screens/MapScreen';
 import RestaurantListScreen from './src/screens/ResturantListScreen'; // FIXED: Corretto import
 import RestaurantDetailScreen from './src/screens/ResturantDetailScreen'; // FIXED: Corretto import
 import { Restaurant } from './src/services/googlePlaces';
 import AuthScreen from './src/screens/authScreen';
+import FavoritesListScreen from './src/screens/FavoritesListScreen';
+import UserProfileScreen from './src/screens/UserProfileScreen';
 
 // Definiamo i tipi per la navigazione
 export type RootStackParamList = {
   MainTabs: undefined;
   RestaurantDetail: { restaurant: Restaurant };
+  FavoritesList: undefined;
   Auth: undefined;
 };
 
 export type TabParamList = {
   Mappa: undefined;
   Lista: undefined;
+  Profilo: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -47,6 +52,15 @@ function MainTabs() {
         component={RestaurantListScreen}
         options={{
           tabBarIcon: () => <Text style={{ fontSize: 20 }}>📋</Text>,
+        }}
+      />
+      <Tab.Screen 
+        name="Profilo" 
+        component={UserProfileScreen}
+        options={{
+          tabBarIcon: ({ focused, color }) => (
+            <Text style={{ fontSize: focused ? 22 : 20, color }}>{focused ? '👤' : '👥'}</Text>
+          ),
         }}
       />
     </Tab.Navigator>
@@ -95,6 +109,16 @@ function RootNavigator() {
           },
         })}
       />
+      <Stack.Screen 
+        name="FavoritesList" 
+        component={FavoritesListScreen}
+        options={{
+          title: 'I Miei Preferiti',
+          headerStyle: { backgroundColor: '#FF6B6B' },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -103,9 +127,11 @@ function RootNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
+      <LocationProvider>
+        <NavigationContainer>
+          <RootNavigator />
+        </NavigationContainer>
+      </LocationProvider>
     </AuthProvider>
   );
 }

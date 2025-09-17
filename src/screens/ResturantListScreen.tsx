@@ -10,18 +10,25 @@ import {
   Alert,
   ListRenderItem,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { searchNearbyRestaurants, Restaurant } from '../services/googlePlaces';
-import { RootStackParamList } from '../../App';
+import { RootStackParamList, TabParamList } from '../../App';
 import FilterModal, { FilterOptions } from '../components/FilterModal';
 import FavoriteButton from '../components/FavoriteButton';
+import { geocodeLocation } from '../services/googlePlaces';
+import { useLocationSelection } from '../contexts/LocationContext';
 
 const NAPLES = { LAT: 40.8522, LNG: 14.2681 };
 
-type NavigationProp = StackNavigationProp<RootStackParamList>;
+type NavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Lista'>,
+  StackNavigationProp<RootStackParamList>
+>;
 
 // Estendi Restaurant per includere distance
 interface RestaurantWithDistance extends Restaurant {
@@ -30,11 +37,14 @@ interface RestaurantWithDistance extends Restaurant {
 
 export default function RestaurantListScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantWithDistance[]>([]);
+  const [recommended, setRecommended] = useState<RestaurantWithDistance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [searchCenter, setSearchCenter] = useState<{ latitude: number; longitude: number } | null>(null);
   const navigation = useNavigation<NavigationProp>();
+  const { locationQuery: selectedQuery, coordinates: selectedCoords } = useLocationSelection();
 
   // Stato filtri con valori di default
   const [filters, setFilters] = useState<FilterOptions>({
@@ -44,6 +54,7 @@ export default function RestaurantListScreen() {
     maxDistance: 5000,
     showOnlyOpen: false,
     sortBy: 'rating',
+    locationQuery: selectedQuery || '',
   });
 
   useEffect(() => {
@@ -51,29 +62,51 @@ export default function RestaurantListScreen() {
     loadRestaurants();
   }, []);
 
+  // Sync con LocationContext: se cambia località selezionata, ricarica
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, locationQuery: selectedQuery || '' }));
+    // trigger reload con le nuove coordinate
+    loadRestaurants();
+  }, [selectedQuery, selectedCoords]);
+
   const loadRestaurants = async (showRefreshLoader = false) => {
     console.log('🔄 Caricamento ristoranti iniziato...');
     if (showRefreshLoader) setRefreshing(true);
     else setLoading(true);
     
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      console.log('🔐 Permission status:', status);
-      
       let lat: number, lng: number;
-      
-      if (status !== 'granted') {
-        console.log('🏠 Usando posizione default (Centro Napoli)');
-        lat = NAPLES.LAT;
-        lng = NAPLES.LNG;
+
+      const queryStr = ((selectedQuery ?? filters.locationQuery) || '').trim();
+      if (queryStr) {
+        console.log('🧭 Geocoding per località manuale:', queryStr);
+        if (selectedCoords) {
+          lat = selectedCoords.latitude;
+          lng = selectedCoords.longitude;
+          console.log('📍 Uso coordinate selezionate da contesto:', lat, lng);
+        } else {
+          const geo = await geocodeLocation(queryStr);
+          if (!geo) {
+            throw new Error('Località non trovata');
+          }
+          lat = geo.latitude;
+          lng = geo.longitude;
+          console.log('📍 Località geocodata:', geo.formattedAddress, lat, lng);
+        }
       } else {
-        console.log('📱 Permesso concesso, ottenendo posizione...');
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        lat = location.coords.latitude;
-        lng = location.coords.longitude;
-        console.log('📍 Posizione corrente:', { lat, lng });
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('🔐 Permission status:', status);
+        if (status !== 'granted') {
+          console.log('🏠 Usando posizione default (Centro Napoli)');
+          lat = NAPLES.LAT;
+          lng = NAPLES.LNG;
+        } else {
+          console.log('📱 Permesso concesso, ottenendo posizione...');
+          const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          lat = location.coords.latitude;
+          lng = location.coords.longitude;
+          console.log('📍 Posizione corrente:', { lat, lng });
+        }
       }
       // Se stiamo usando i mock (niente API key) e siamo molto lontani da Napoli,
       // usa Napoli come base per evitare che tutti i risultati risultino "troppo distanti".
@@ -87,6 +120,7 @@ export default function RestaurantListScreen() {
       }
 
       setUserLocation({ latitude: effectiveLat, longitude: effectiveLng });
+      setSearchCenter({ latitude: effectiveLat, longitude: effectiveLng });
 
       const nearbyRestaurants = await searchNearbyRestaurants(effectiveLat, effectiveLng, filters.maxDistance);
       console.log('🍽️ Ristoranti trovati:', nearbyRestaurants.length);
@@ -108,6 +142,7 @@ export default function RestaurantListScreen() {
           distance: calculateDistance(NAPLES.LAT, NAPLES.LNG, r.latitude, r.longitude)
         }));
         setUserLocation({ latitude: NAPLES.LAT, longitude: NAPLES.LNG });
+        setSearchCenter({ latitude: NAPLES.LAT, longitude: NAPLES.LNG });
         setRestaurants(recalculated);
       } else {
         setRestaurants(restaurantsWithDistance);
@@ -219,12 +254,56 @@ export default function RestaurantListScreen() {
     return filtered;
   }, [restaurants, filters]);
 
+  // Calcola suggerimenti fuori dal range selezionato
+  const computeRecommended = async () => {
+    try {
+      if (!searchCenter) return;
+      // Estendi il raggio fino a 50km (limite Nearby Search)
+      const recRadius = Math.min(50000, Math.max(filters.maxDistance * 1.5, filters.maxDistance + 5000));
+      const recNearby = await searchNearbyRestaurants(searchCenter.latitude, searchCenter.longitude, recRadius, 60);
+      const recWithDistance: RestaurantWithDistance[] = recNearby.map(r => ({
+        ...r,
+        distance: calculateDistance(searchCenter.latitude, searchCenter.longitude, r.latitude, r.longitude)
+      }));
+      const mainIds = new Set(restaurants.map(r => r.id));
+      // Applica stessi filtri ma senza vincolo di distanza, e tieni solo quelli oltre il range scelto
+      let recFiltered = recWithDistance.filter(r => {
+        if (mainIds.has(r.id)) return false;
+        if (filters.cuisineTypes && !filters.cuisineTypes.includes('Tutti')) {
+          const match = filters.cuisineTypes.some(c => r.cuisine_type?.toLowerCase().includes(c.toLowerCase()));
+          if (!match) return false;
+        }
+        if (r.priceLevel) {
+          if (r.priceLevel < filters.priceRange[0] || r.priceLevel > filters.priceRange[1]) return false;
+        }
+        if (r.rating < filters.minRating) return false;
+        if (filters.showOnlyOpen && !r.isOpen) return false;
+        // Solo oltre il range corrente
+        return (r.distance ?? Infinity) > (filters.maxDistance + 500); // piccolo buffer di 0.5km per evitare borderline
+      });
+      recFiltered.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      setRecommended(recFiltered.slice(0, 20));
+    } catch (e) {
+      console.error('❌ Errore calcolo suggeriti:', e);
+      setRecommended([]);
+    }
+  };
+
+  useEffect(() => {
+    // Se risultati pochi o nulli, calcola suggeriti
+    if (!loading && restaurants.length > 0 && filteredRestaurants.length < 5) {
+      computeRecommended();
+    } else if (filteredRestaurants.length >= 5) {
+      setRecommended([]);
+    }
+  }, [loading, restaurants, filteredRestaurants.length, filters]);
+
   const handleApplyFilters = (newFilters: FilterOptions) => {
     console.log('✅ Applicando nuovi filtri:', newFilters);
     setFilters(newFilters);
     
-    // Se la distanza è cambiata, ricarica i dati
-    if (newFilters.maxDistance !== filters.maxDistance) {
+    // Se la distanza o la località sono cambiate, ricarica i dati
+    if (newFilters.maxDistance !== filters.maxDistance || newFilters.locationQuery !== filters.locationQuery) {
       console.log('🔄 Distanza cambiata, ricaricando dati...');
       loadRestaurants();
     }
@@ -259,41 +338,46 @@ export default function RestaurantListScreen() {
     return `${(distance / 1000).toFixed(1)}km`;
   };
 
+  // Debug helper to ensure units are meters
+  useEffect(() => {
+    console.log('🧪 Distanza massima selezionata (m):', filters.maxDistance);
+  }, [filters.maxDistance]);
+
   const renderRestaurant: ListRenderItem<RestaurantWithDistance> = ({ item }) => {
     return (
       <TouchableOpacity 
         style={styles.restaurantCard}
         onPress={() => navigation.navigate('RestaurantDetail', { restaurant: item })}
+        activeOpacity={0.85}
       >
-        <View style={styles.restaurantInfo}>
-          <View style={styles.headerRow}>
-            <Text style={styles.restaurantName}>{item.name}</Text>
-            <View style={styles.headerActions}>
-              {item.distance && (
-                <Text style={styles.distance}>📍 {formatDistance(item.distance)}</Text>
-              )}
-              <FavoriteButton restaurant={item} size="sm" style={styles.favoriteButton} />
-            </View>
-          </View>
-          
-          <Text style={styles.restaurantAddress}>{item.address}</Text>
-          
-          <View style={styles.restaurantMeta}>
-            <Text style={styles.rating}>⭐ {item.rating}/5</Text>
-            <Text style={styles.priceLevel}>
-              {'€'.repeat(item.priceLevel || 1)}
-            </Text>
-            <View style={[
-              styles.statusBadge,
-              { backgroundColor: item.isOpen ? '#4CAF50' : '#F44336' }
-            ]}>
-              <Text style={styles.statusText}>
+        <View style={styles.cardRow}>
+          <View style={styles.imageContainer}>
+            {item.photoUrl ? (
+              <Image source={{ uri: item.photoUrl }} style={styles.image} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Image source={require('../../assets/NearBiteLogo.png')} style={styles.imageLogo} />
+              </View>
+            )}
+            <View style={[styles.statusChip, { backgroundColor: item.isOpen ? '#E8F5E9' : '#FDECEA' }]}> 
+              <Text style={[styles.statusChipText, { color: item.isOpen ? '#2E7D32' : '#C62828' }]}>
                 {item.isOpen ? 'Aperto' : 'Chiuso'}
               </Text>
             </View>
+            <FavoriteButton restaurant={item} size="sm" style={styles.favoriteOverlay} />
           </View>
-          
-          <Text style={styles.cuisine}>{item.cuisine_type}</Text>
+          <View style={styles.infoWrap}>
+            <Text style={styles.restaurantName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.restaurantAddress} numberOfLines={2}>{item.address}</Text>
+            <View style={styles.metaRow}>
+              <View style={styles.metaChip}><Text style={styles.metaChipText}>⭐ {item.rating.toFixed(1)}</Text></View>
+              {Boolean(item.distance) && (
+                <View style={styles.metaChip}><Text style={styles.metaChipText}>📍 {formatDistance(item.distance)}</Text></View>
+              )}
+              <View style={styles.metaChip}><Text style={styles.metaChipText}>{'€'.repeat(item.priceLevel || 1)}</Text></View>
+            </View>
+            {!!item.cuisine_type && <Text style={styles.cuisine}>{item.cuisine_type}</Text>}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -305,6 +389,7 @@ export default function RestaurantListScreen() {
         <Text style={styles.statsText}>
           📍 {filteredRestaurants.length} ristoranti trovati
           {getActiveFiltersCount() > 0 && ` • ${getActiveFiltersCount()} filtri attivi`}
+          {filters.locationQuery?.trim() ? ` • Zona: ${filters.locationQuery}` : ''}
         </Text>
         <TouchableOpacity 
           style={[
@@ -368,34 +453,55 @@ export default function RestaurantListScreen() {
   }
 
   if (filteredRestaurants.length === 0 && restaurants.length > 0) {
-    console.log('🔍 Nessun risultato per i filtri correnti');
+    console.log('🔍 Nessun risultato per i filtri correnti — mostro suggerimenti');
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          {renderHeader()}
-          <View style={styles.noResultsContainer}>
-            <Text style={styles.noResultsTitle}>🔍 Nessun risultato</Text>
-            <Text style={styles.noResultsSubtitle}>
-              Prova a modificare i filtri di ricerca
-            </Text>
-            <TouchableOpacity 
-              style={styles.resetFiltersButton}
-              onPress={() => {
-                const resetFilters: FilterOptions = {
-                  cuisineTypes: ['Tutti'],
-                  priceRange: [1, 4],
-                  minRating: 0,
-                  maxDistance: 5000,
-                  showOnlyOpen: false,
-                  sortBy: 'rating',
-                };
-                setFilters(resetFilters);
-              }}
-            >
-              <Text style={styles.resetFiltersText}>🔄 Reset Filtri</Text>
-            </TouchableOpacity>
-          </View>
-          
+          <FlatList
+            data={recommended}
+            renderItem={renderRestaurant}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+            ListHeaderComponent={
+              <View>
+                {renderHeader()}
+                <View style={styles.noResultsContainer}>
+                  <Text style={styles.noResultsTitle}>🔍 Nessun risultato</Text>
+                  <Text style={styles.noResultsSubtitle}>Prova a modificare i filtri di ricerca</Text>
+                  <TouchableOpacity 
+                    style={styles.resetFiltersButton}
+                    onPress={() => {
+                      const resetFilters: FilterOptions = {
+                        cuisineTypes: ['Tutti'],
+                        priceRange: [1, 4],
+                        minRating: 0,
+                        maxDistance: 5000,
+                        showOnlyOpen: false,
+                        sortBy: 'rating',
+                        locationQuery: '',
+                      };
+                      setFilters(resetFilters);
+                    }}
+                  >
+                    <Text style={styles.resetFiltersText}>🔄 Reset Filtri</Text>
+                  </TouchableOpacity>
+                </View>
+                {recommended.length > 0 && (
+                  <View style={styles.recoHeader}>
+                    <Text style={styles.recoTitle}>
+                      Ti consigliamo vicino {filters.locationQuery?.trim() ? filters.locationQuery : 'alla tua posizione'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            }
+            ListEmptyComponent={
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsSubtitle}>Nessun suggerimento disponibile</Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+          />
           <FilterModal
             visible={showFilters}
             onClose={() => setShowFilters(false)}
@@ -417,6 +523,55 @@ export default function RestaurantListScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         ListHeaderComponent={renderHeader}
+        ListFooterComponent={
+          recommended.length > 0 ? (
+            <View style={{ paddingTop: 8 }}>
+              <View style={styles.recoHeader}>
+                <Text style={styles.recoTitle}>
+                  Ti consigliamo vicino {filters.locationQuery?.trim() ? filters.locationQuery : 'alla tua posizione'}
+                </Text>
+              </View>
+              {recommended.map((r) => (
+                <TouchableOpacity 
+                  key={`reco_${r.id}`}
+                  style={styles.restaurantCard}
+                  onPress={() => navigation.navigate('RestaurantDetail', { restaurant: r })}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.cardRow}>
+                    <View style={styles.imageContainer}>
+                      {r.photoUrl ? (
+                        <Image source={{ uri: r.photoUrl }} style={styles.image} />
+                      ) : (
+                        <View style={styles.imagePlaceholder}>
+                          <Image source={require('../../assets/NearBiteLogo.png')} style={styles.imageLogo} />
+                        </View>
+                      )}
+                      <View style={[styles.statusChip, { backgroundColor: r.isOpen ? '#E8F5E9' : '#FDECEA' }]}> 
+                        <Text style={[styles.statusChipText, { color: r.isOpen ? '#2E7D32' : '#C62828' }]}>
+                          {r.isOpen ? 'Aperto' : 'Chiuso'}
+                        </Text>
+                      </View>
+                      <FavoriteButton restaurant={r} size="sm" style={styles.favoriteOverlay} />
+                    </View>
+                    <View style={styles.infoWrap}>
+                      <Text style={styles.restaurantName} numberOfLines={1}>{r.name}</Text>
+                      <Text style={styles.restaurantAddress} numberOfLines={2}>{r.address}</Text>
+                      <View style={styles.metaRow}>
+                        <View style={styles.metaChip}><Text style={styles.metaChipText}>⭐ {r.rating.toFixed(1)}</Text></View>
+                        {Boolean(r.distance) && (
+                          <View style={styles.metaChip}><Text style={styles.metaChipText}>📍 {formatDistance(r.distance)}</Text></View>
+                        )}
+                        <View style={styles.metaChip}><Text style={styles.metaChipText}>{'€'.repeat(r.priceLevel || 1)}</Text></View>
+                      </View>
+                      {!!r.cuisine_type && <Text style={styles.cuisine}>{r.cuisine_type}</Text>}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -537,7 +692,7 @@ const styles = StyleSheet.create({
   restaurantCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -545,69 +700,34 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  restaurantInfo: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  favoriteButton: {
-    marginLeft: 8,
-  },
+  cardRow: { flexDirection: 'row' },
+  imageContainer: { width: 96, height: 96, borderRadius: 12, overflow: 'hidden', marginRight: 12, position: 'relative' },
+  image: { width: '100%', height: '100%' },
+  imagePlaceholder: { flex: 1, backgroundColor: '#FFF3F2', alignItems: 'center', justifyContent: 'center' },
+  imageLogo: { width: 48, height: 48, resizeMode: 'contain', opacity: 0.8 },
+  favoriteOverlay: { position: 'absolute', top: 6, right: 6 },
+  infoWrap: { flex: 1, justifyContent: 'center' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  metaChip: { backgroundColor: '#FFF0ED', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 6 },
+  metaChipText: { color: '#FF6B6B', fontWeight: '600', fontSize: 12 },
+  statusChip: { position: 'absolute', bottom: 6, left: 6, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  statusChipText: { fontSize: 10, fontWeight: '700' },
   restaurantName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
     marginRight: 8,
-  },
-  distance: {
-    fontSize: 12,
-    color: '#888',
-    fontWeight: '500',
   },
   restaurantAddress: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 8,
-  },
-  restaurantMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 12,
-  },
-  priceLevel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4CAF50',
-    marginRight: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  statusText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
+    marginTop: 2,
   },
   cuisine: {
     fontSize: 12,
     color: '#888',
     fontStyle: 'italic',
+    marginTop: 6,
   },
   noResultsContainer: {
     flex: 1,
@@ -636,5 +756,15 @@ const styles = StyleSheet.create({
   resetFiltersText: {
     color: 'white',
     fontWeight: '600',
+  },
+  recoHeader: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  recoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
   },
 });
