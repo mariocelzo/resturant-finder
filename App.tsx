@@ -12,6 +12,7 @@ import { Restaurant } from './src/services/googlePlaces';
 import AuthScreen from './src/screens/authScreen';
 import FavoritesListScreen from './src/screens/FavoritesListScreen';
 import UserProfileScreen from './src/screens/UserProfileScreen';
+import ManageLocationsScreen from './src/screens/ManageLocationsScreen';
 
 // Definiamo i tipi per la navigazione
 export type RootStackParamList = {
@@ -19,6 +20,7 @@ export type RootStackParamList = {
   RestaurantDetail: { restaurant: Restaurant };
   FavoritesList: undefined;
   Auth: undefined;
+  ManageLocations: undefined;
 };
 
 export type TabParamList = {
@@ -114,6 +116,16 @@ function RootNavigator() {
         component={FavoritesListScreen}
         options={{
           title: 'I Miei Preferiti',
+          headerStyle: { backgroundColor: '#FF6B6B' },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
+      <Stack.Screen 
+        name="ManageLocations" 
+        component={ManageLocationsScreen}
+        options={{
+          title: 'Posizioni Salvate',
           headerStyle: { backgroundColor: '#FF6B6B' },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },

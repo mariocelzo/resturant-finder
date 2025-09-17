@@ -13,6 +13,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocationSelection } from '../contexts/LocationContext';
 import { UserProfileService, UserProfile, UserLocation } from '../services/userProfileService';
 import { useFavorites } from '../hooks/useFavorites';
 import { RootStackParamList } from '../../App';
@@ -27,6 +28,7 @@ export default function UserProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, signOut } = useAuth();
   const { favoritesCount, favorites } = useFavorites();
+  const { setManualLocation } = useLocationSelection();
 
   // Ricarica quando la schermata ottiene focus
   useFocusEffect(
@@ -100,6 +102,12 @@ export default function UserProfileScreen() {
           ...loc,
           isDefault: loc.id === location.id
         })));
+        // Sincronizza subito mappa e lista con la posizione scelta
+        setManualLocation(location.address, {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          formattedAddress: location.address,
+        });
         
         Alert.alert('✅', `"${location.name}" impostata come posizione di default`);
       } else {
@@ -246,9 +254,7 @@ export default function UserProfileScreen() {
           <Text style={styles.emptyStateText}>Nessuna posizione salvata</Text>
           <TouchableOpacity 
             style={styles.addLocationButton}
-            onPress={() => {
-              Alert.alert('Info', 'Funzionalità di aggiunta posizioni in arrivo!');
-            }}
+            onPress={() => navigation.navigate('ManageLocations' as any)}
           >
             <Text style={styles.addLocationText}>+ Aggiungi Posizione</Text>
           </TouchableOpacity>
@@ -287,9 +293,7 @@ export default function UserProfileScreen() {
           
           <TouchableOpacity 
             style={styles.addLocationButton}
-            onPress={() => {
-              Alert.alert('Info', 'Funzionalità di aggiunta posizioni in arrivo!');
-            }}
+            onPress={() => navigation.navigate('ManageLocations' as any)}
           >
             <Text style={styles.addLocationText}>+ Aggiungi Posizione</Text>
           </TouchableOpacity>

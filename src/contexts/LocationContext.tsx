@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { UserProfileService } from '../services/userProfileService';
 
 export interface Coordinates {
   latitude: number;
@@ -29,6 +30,24 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setCoordinates(null);
   };
 
+  // All'avvio, prova a caricare la posizione di default (persistita)
+  useEffect(() => {
+    (async () => {
+      try {
+        const def = await UserProfileService.getDefaultSearchLocation();
+        if (def) {
+          setManualLocation(def.address, {
+            latitude: def.latitude,
+            longitude: def.longitude,
+            formattedAddress: def.address,
+          });
+        }
+      } catch (e) {
+        // noop
+      }
+    })();
+  }, []);
+
   return (
     <LocationContext.Provider value={{ locationQuery, coordinates, setManualLocation, clearLocation }}>
       {children}
@@ -41,4 +60,3 @@ export function useLocationSelection(): LocationContextType {
   if (!ctx) throw new Error('useLocationSelection must be used within LocationProvider');
   return ctx;
 }
-

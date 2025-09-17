@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { placesAutocomplete, getPlaceDetails, geocodeLocation } from '../services/googlePlaces';
+import * as Location from 'expo-location';
+import { UserProfileService, UserLocation } from '../services/userProfileService';
 import { useLocationSelection } from '../contexts/LocationContext';
 
 export interface FilterOptions {
@@ -70,10 +72,46 @@ export default function FilterModal({
   const [queryInput, setQueryInput] = useState<string>(currentFilters.locationQuery || '');
   const [suggestions, setSuggestions] = useState<{ description: string; placeId: string }[]>([]);
   const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [savedLocations, setSavedLocations] = useState<UserLocation[]>([]);
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
 
   useEffect(() => {
     setQueryInput(currentFilters.locationQuery || locationQuery || '');
   }, [currentFilters.locationQuery, locationQuery]);
+
+  useEffect(() => {
+    if (!visible) return;
+    (async () => {
+      const locs = await UserProfileService.getUserLocations();
+      setSavedLocations(locs);
+      // Preseleziona la default se nulla selezionato
+      if (!selectedSavedId) {
+        const def = locs.find(l => l.isDefault);
+        if (def) setSelectedSavedId(def.id || null);
+      }
+    })();
+  }, [visible]);
+
+  const chooseCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return;
+      }
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setSelectedSavedId('current');
+      setManualLocation('Posizione attuale', {
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        formattedAddress: 'Posizione attuale',
+      });
+      setQueryInput('Posizione attuale');
+      setFilters(prev => ({ ...prev, locationQuery: 'Posizione attuale' }));
+      setSuggestions([]);
+    } catch (e) {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     if (!queryInput || queryInput.length < 2) {
@@ -92,11 +130,11 @@ export default function FilterModal({
     console.log('🔍 Applicando filtri:', filters);
     // Sincronizza LocationContext per coerenza mappa/lista
     const q = (filters.locationQuery || '').trim();
-    if (q) {
+    if (selectedSavedId) {
+      // Già impostata con setManualLocation alla selezione
+    } else if (q) {
       const geo = await geocodeLocation(q);
-      if (geo) {
-        setManualLocation(q, { latitude: geo.latitude, longitude: geo.longitude, formattedAddress: geo.formattedAddress });
-      }
+      if (geo) setManualLocation(q, { latitude: geo.latitude, longitude: geo.longitude, formattedAddress: geo.formattedAddress });
     } else {
       clearLocation();
     }
@@ -302,6 +340,40 @@ export default function FilterModal({
 
           {/* Località manuale */}
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>⭐ Posizioni Salvate</Text>
+            {savedLocations.length === 0 ? (
+              <Text style={styles.helperText}>Nessuna posizione salvata. Aggiungila dalla tua area profilo.</Text>
+            ) : (
+              <View style={styles.savedList}>
+                <TouchableOpacity
+                  key={'current-location'}
+                  style={[styles.savedChip, selectedSavedId === 'current' && styles.savedChipActive]}
+                  onPress={chooseCurrentLocation}
+                >
+                  <Text style={[styles.savedChipText, selectedSavedId === 'current' && styles.savedChipTextActive]}>📱 Posizione attuale</Text>
+                </TouchableOpacity>
+                {savedLocations.map((loc) => (
+                  <TouchableOpacity
+                    key={loc.id}
+                    style={[styles.savedChip, selectedSavedId === loc.id && styles.savedChipActive]}
+                    onPress={() => {
+                      setSelectedSavedId(loc.id || null);
+                      setManualLocation(loc.name, { latitude: loc.latitude, longitude: loc.longitude, formattedAddress: loc.address });
+                      setQueryInput(loc.address);
+                      setFilters(prev => ({ ...prev, locationQuery: loc.address }));
+                    }}
+                  >
+                    <Text style={[styles.savedChipText, selectedSavedId === loc.id && styles.savedChipTextActive]}>
+                      {loc.type === 'home' ? '🏠' : loc.type === 'work' ? '🏢' : '📍'} {loc.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Località manuale */}
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>📍 Località</Text>
             <Text style={styles.helperText}>Inserisci città/indirizzo oppure lascia vuoto per usare la tua posizione</Text>
             <TextInput
@@ -310,6 +382,7 @@ export default function FilterModal({
               value={queryInput}
               onChangeText={(text) => {
                 setQueryInput(text);
+                setSelectedSavedId(null);
                 setFilters(prev => ({ ...prev, locationQuery: text }));
               }}
               autoCorrect={false}
@@ -322,14 +395,15 @@ export default function FilterModal({
                   <TouchableOpacity
                     key={s.placeId}
                     style={styles.suggestionItem}
-                    onPress={async () => {
-                      const details = await getPlaceDetails(s.placeId);
-                      if (details) {
-                        setManualLocation(s.description, {
-                          latitude: details.latitude,
-                          longitude: details.longitude,
-                          formattedAddress: details.formattedAddress,
-                        });
+                  onPress={async () => {
+                    const details = await getPlaceDetails(s.placeId);
+                    if (details) {
+                      setSelectedSavedId(null);
+                      setManualLocation(s.description, {
+                        latitude: details.latitude,
+                        longitude: details.longitude,
+                        formattedAddress: details.formattedAddress,
+                      });
                         setQueryInput(s.description);
                         setFilters(prev => ({ ...prev, locationQuery: s.description }));
                         setSuggestions([]);
@@ -342,7 +416,7 @@ export default function FilterModal({
               </View>
             )}
             {!!filters.locationQuery && (
-              <TouchableOpacity onPress={() => { setFilters(prev => ({ ...prev, locationQuery: '' })); setQueryInput(''); setSuggestions([]); clearLocation(); }} style={styles.clearLocBtn}>
+              <TouchableOpacity onPress={() => { setFilters(prev => ({ ...prev, locationQuery: '' })); setQueryInput(''); setSuggestions([]); setSelectedSavedId(null); clearLocation(); }} style={styles.clearLocBtn}>
                 <Text style={styles.clearLocText}>Usa posizione attuale</Text>
               </TouchableOpacity>
             )}
@@ -635,6 +709,30 @@ const styles = StyleSheet.create({
   sortTextActive: {
     color: '#fff',
     fontWeight: '600',
+  },
+  savedList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  savedChip: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  savedChipActive: {
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
+  },
+  savedChipText: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  savedChipTextActive: {
+    color: '#fff',
   },
   footer: {
     backgroundColor: '#fff',

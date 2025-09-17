@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, ActivityIndicator, Modal, TextInput, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Alert, Text, ActivityIndicator, Modal, TextInput, TouchableOpacity, Image } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { searchNearbyRestaurants, Restaurant, geocodeLocation, placesAutocomplete, getPlaceDetails } from '../services/googlePlaces';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocationSelection } from '../contexts/LocationContext';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
 
 function MapScreen() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]); // FIXED: Dichiarata variabile restaurants
   const [loading, setLoading] = useState(true); // FIXED: Aggiunto stato loading
@@ -16,6 +20,7 @@ function MapScreen() {
   const [region, setRegion] = useState<Region | undefined>(undefined);
   const [suggestions, setSuggestions] = useState<{ description: string; placeId: string }[]>([]);
   const { setManualLocation, locationQuery: selectedQuery, coordinates: selectedCoords } = useLocationSelection();
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
 
   useEffect(() => {
     console.log('🗺️ MapScreen mounted');
@@ -182,6 +187,13 @@ function MapScreen() {
             title={restaurant.name}
             description={`⭐ ${restaurant.rating}/5 • ${restaurant.cuisine_type}`}
             pinColor={restaurant.isOpen ? '#4CAF50' : '#F44336'}
+            onPress={() => {
+              if (selectedRestaurant && selectedRestaurant.id === restaurant.id) {
+                navigation.navigate('RestaurantDetail', { restaurant });
+              } else {
+                setSelectedRestaurant(restaurant);
+              }
+            }}
           />
         ))}
       </MapView>
@@ -193,6 +205,38 @@ function MapScreen() {
           <Ionicons name="search" size={18} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
+
+      {/* Mini preview del ristorante selezionato */}
+      {selectedRestaurant && (
+        <TouchableOpacity
+          activeOpacity={0.95}
+          style={styles.previewCard}
+          onPress={() => navigation.navigate('RestaurantDetail', { restaurant: selectedRestaurant })}
+        >
+          <View style={styles.previewRow}>
+            <View style={styles.previewImageWrap}>
+              {selectedRestaurant.photoUrl ? (
+                <Image source={{ uri: selectedRestaurant.photoUrl }} style={styles.previewImage} />
+              ) : (
+                <View style={styles.previewPlaceholder}>
+                  <Text style={{ fontSize: 18 }}>🍽️</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.previewContent}>
+              <Text style={styles.previewTitle} numberOfLines={1}>{selectedRestaurant.name}</Text>
+              <Text style={styles.previewSubtitle} numberOfLines={1}>{selectedRestaurant.cuisine_type || 'Ristorante'}</Text>
+              <Text style={styles.previewRating}>⭐ {selectedRestaurant.rating?.toFixed(1) || 'N/A'}/5 {selectedRestaurant.isOpen ? '• Aperto' : '• Chiuso'}</Text>
+            </View>
+            <TouchableOpacity style={styles.previewClose} onPress={() => setSelectedRestaurant(null)}>
+              <Text style={styles.previewCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.previewFooter}>
+            <Text style={styles.previewHint}>Tocca di nuovo il pin o questo riquadro per i dettagli</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Modal di ricerca località */}
       <Modal visible={searchVisible} animationType="fade" transparent>
@@ -370,6 +414,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalSearchText: { color: '#fff', fontWeight: '700' },
+  previewCard: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+    padding: 12,
+  },
+  previewRow: { flexDirection: 'row', alignItems: 'center' },
+  previewImageWrap: { width: 72, height: 72, borderRadius: 8, overflow: 'hidden', marginRight: 12 },
+  previewImage: { width: '100%', height: '100%' },
+  previewPlaceholder: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF3F2' },
+  previewContent: { flex: 1 },
+  previewTitle: { fontSize: 16, fontWeight: '700', color: '#333' },
+  previewSubtitle: { fontSize: 12, color: '#666', marginTop: 2 },
+  previewRating: { fontSize: 12, color: '#444', marginTop: 6, fontWeight: '600' },
+  previewClose: { padding: 6, marginLeft: 6 },
+  previewCloseText: { fontSize: 16, color: '#999' },
+  previewFooter: { marginTop: 8 },
+  previewHint: { fontSize: 11, color: '#999' },
 });
 
 export default MapScreen;
