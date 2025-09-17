@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { Restaurant } from './googlePlaces';
+import { AuthService } from './authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface FavoriteRestaurant extends Restaurant {
   favorited_at?: string;
@@ -12,11 +14,11 @@ export class FavoritesService {
    */
   static async addToFavorites(restaurant: Restaurant): Promise<boolean> {
     try {
-      console.log('❤️ Aggiungendo ai preferiti:', restaurant.name);
-      
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('❤️ Adding to favorites:', restaurant);
+
+      const user = await AuthService.getCurrentUser();
       if (!user) {
-        console.error('❌ Utente non autenticato');
+        console.error('❌ User not authenticated');
         return false;
       }
 
@@ -63,16 +65,22 @@ export class FavoritesService {
     try {
       console.log('💔 Rimuovendo dai preferiti:', restaurantId);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser) {
         console.error('❌ Utente non autenticato');
         return false;
       }
 
+      // Se è un guest user, usa AsyncStorage
+      if (currentUser.isGuest) {
+        return await this.removeFromGuestFavorites(restaurantId);
+      }
+
+      // Altrimenti usa Supabase
       const { error } = await supabase
         .from('favorites')
         .delete()
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .eq('restaurant_id', restaurantId);
 
       if (error) {
@@ -93,15 +101,21 @@ export class FavoritesService {
    */
   static async isFavorite(restaurantId: string): Promise<boolean> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser) {
         return false;
       }
 
+      // Se è un guest user, controlla AsyncStorage
+      if (currentUser.isGuest) {
+        return await this.isGuestFavorite(currentUser.id, restaurantId);
+      }
+
+      // Altrimenti controlla Supabase
       const { data, error } = await supabase
         .from('favorites')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .eq('restaurant_id', restaurantId)
         .single();
 
@@ -124,16 +138,24 @@ export class FavoritesService {
     try {
       console.log('📋 Caricando preferiti utente...');
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser) {
         console.log('⚠️ Utente non autenticato, returning empty array');
         return [];
       }
 
+      // Se è un guest user, usa AsyncStorage
+      if (currentUser.isGuest) {
+        const guestFavorites = await this.getGuestFavorites(currentUser.id);
+        console.log('✅ Preferiti guest caricati:', guestFavorites.length);
+        return guestFavorites;
+      }
+
+      // Altrimenti usa Supabase
       const { data, error } = await supabase
         .from('favorites')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -188,13 +210,20 @@ export class FavoritesService {
    */
   static async getFavoritesCount(): Promise<number> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 0;
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser) return 0;
 
+      // Se è un guest user, conta AsyncStorage
+      if (currentUser.isGuest) {
+        const guestFavorites = await this.getGuestFavorites(currentUser.id);
+        return guestFavorites.length;
+      }
+
+      // Altrimenti conta Supabase
       const { count, error } = await supabase
         .from('favorites')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .eq('user_id', currentUser.id);
 
       if (error) {
         console.error('❌ Errore conteggio preferiti:', error);
@@ -213,13 +242,20 @@ export class FavoritesService {
    */
   static async getFavoriteIds(): Promise<string[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser) return [];
 
+      // Se è un guest user, estrae IDs da AsyncStorage
+      if (currentUser.isGuest) {
+        const guestFavorites = await this.getGuestFavorites(currentUser.id);
+        return guestFavorites.map(f => f.id);
+      }
+
+      // Altrimenti usa Supabase
       const { data, error } = await supabase
         .from('favorites')
         .select('restaurant_id')
-        .eq('user_id', user.id);
+        .eq('user_id', currentUser.id);
 
       if (error) {
         console.error('❌ Errore caricamento IDs preferiti:', error);
@@ -240,16 +276,24 @@ export class FavoritesService {
     try {
       console.log('🗑️ Pulendo tutti i preferiti...');
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser) {
         console.error('❌ Utente non autenticato');
         return false;
       }
 
+      // Se è un guest user, pulisci AsyncStorage
+      if (currentUser.isGuest) {
+        await AsyncStorage.removeItem(`guest_favorites_${currentUser.id}`);
+        console.log('✅ Preferiti guest rimossi');
+        return true;
+      }
+
+      // Altrimenti pulisci Supabase
       const { error } = await supabase
         .from('favorites')
         .delete()
-        .eq('user_id', user.id);
+        .eq('user_id', currentUser.id);
 
       if (error) {
         console.error('❌ Errore pulizia preferiti:', error);
@@ -260,6 +304,82 @@ export class FavoritesService {
       return true;
     } catch (error) {
       console.error('❌ Errore nella pulizia preferiti:', error);
+      return false;
+    }
+  }
+
+  // Metodi helper per guest users
+  private static async addToGuestFavorites(restaurant: Restaurant): Promise<boolean> {
+    try {
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser?.isGuest) return false;
+
+      const key = `guest_favorites_${currentUser.id}`;
+      const existingFavorites = await this.getGuestFavorites(currentUser.id);
+      
+      // Controlla se già esiste
+      if (existingFavorites.find(f => f.id === restaurant.id)) {
+        console.log('⚠️ Ristorante già nei preferiti guest');
+        return true;
+      }
+      
+      const favorite: FavoriteRestaurant = {
+        ...restaurant,
+        favorited_at: new Date().toISOString(),
+      };
+      
+      const updatedFavorites = [...existingFavorites, favorite];
+      await AsyncStorage.setItem(key, JSON.stringify(updatedFavorites));
+      
+      console.log('✅ Ristorante aggiunto ai preferiti guest');
+      return true;
+    } catch (error) {
+      console.error('❌ Errore aggiunta preferito guest:', error);
+      return false;
+    }
+  }
+
+  private static async removeFromGuestFavorites(restaurantId: string): Promise<boolean> {
+    try {
+      const currentUser = await AuthService.getCurrentUser();
+      if (!currentUser?.isGuest) return false;
+
+      const key = `guest_favorites_${currentUser.id}`;
+      const existingFavorites = await this.getGuestFavorites(currentUser.id);
+      
+      const updatedFavorites = existingFavorites.filter(f => f.id !== restaurantId);
+      await AsyncStorage.setItem(key, JSON.stringify(updatedFavorites));
+      
+      console.log('✅ Ristorante rimosso dai preferiti guest');
+      return true;
+    } catch (error) {
+      console.error('❌ Errore rimozione preferito guest:', error);
+      return false;
+    }
+  }
+
+  private static async getGuestFavorites(guestId: string): Promise<FavoriteRestaurant[]> {
+    try {
+      const key = `guest_favorites_${guestId}`;
+      const favoritesJson = await AsyncStorage.getItem(key);
+      
+      if (favoritesJson) {
+        return JSON.parse(favoritesJson) as FavoriteRestaurant[];
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('❌ Errore caricamento preferiti guest:', error);
+      return [];
+    }
+  }
+
+  private static async isGuestFavorite(guestId: string, restaurantId: string): Promise<boolean> {
+    try {
+      const favorites = await this.getGuestFavorites(guestId);
+      return favorites.some(f => f.id === restaurantId);
+    } catch (error) {
+      console.error('❌ Errore controllo preferito guest:', error);
       return false;
     }
   }

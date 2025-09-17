@@ -14,6 +14,7 @@
 - Launch platform targets: `npm run ios`, `npm run android`, `npm run web`.
 - Notes: No test script is configured yet; see Testing Guidelines to add one.
 
+
 ## Coding Style & Naming Conventions
 - Language: TypeScript (strict). Prefer explicit types and avoid `any`.
 - Components: Functional components with hooks; one component per file when possible.
