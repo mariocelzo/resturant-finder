@@ -2,17 +2,19 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
-import { AuthProvider } from './src/contexts/AuthContext';
+import { Text, View, ActivityIndicator } from 'react-native';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import MapScreen from './src/screens/MapScreen';
 import RestaurantListScreen from './src/screens/ResturantListScreen'; // FIXED: Corretto import
 import RestaurantDetailScreen from './src/screens/ResturantDetailScreen'; // FIXED: Corretto import
 import { Restaurant } from './src/services/googlePlaces';
+import AuthScreen from './src/screens/authScreen';
 
 // Definiamo i tipi per la navigazione
 export type RootStackParamList = {
   MainTabs: undefined;
   RestaurantDetail: { restaurant: Restaurant };
+  Auth: undefined;
 };
 
 export type TabParamList = {
@@ -51,32 +53,58 @@ function MainTabs() {
   );
 }
 
-// App principale con Stack Navigator
+function RootNavigator() {
+  const { loading, isAuthenticated } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Auth">
+          {() => <AuthScreen onAuthSuccess={() => { /* Gestito dal listener nel context */ }} />}
+        </Stack.Screen>
+      </Stack.Navigator>
+    );
+  }
+
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="MainTabs" 
+        component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="RestaurantDetail" 
+        component={RestaurantDetailScreen}
+        options={({ route }) => ({
+          title: route.params.restaurant.name,
+          headerStyle: {
+            backgroundColor: '#FF6B6B',
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
+
+// App principale con Stack Navigator e gating per autenticazione
 export default function App() {
   return (
     <AuthProvider>
       <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen 
-            name="MainTabs" 
-            component={MainTabs}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen 
-            name="RestaurantDetail" 
-            component={RestaurantDetailScreen}
-            options={({ route }) => ({
-              title: route.params.restaurant.name,
-              headerStyle: {
-                backgroundColor: '#FF6B6B',
-              },
-              headerTintColor: '#fff',
-              headerTitleStyle: {
-                fontWeight: 'bold',
-              },
-            })}
-          />
-        </Stack.Navigator>
+        <RootNavigator />
       </NavigationContainer>
     </AuthProvider>
   );

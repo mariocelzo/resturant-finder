@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "resturant-finder",
-    "slug": "resturant-finder",
+    "name": "NearBite",
+    "slug": "near-bite",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/NearBiteLogo.png",

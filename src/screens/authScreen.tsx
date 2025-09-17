@@ -10,19 +10,24 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { AuthService } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
 }
 
 export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+  const { signIn, signUp, signInAsGuest } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,22 +72,15 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     try {
       setLoading(true);
 
-      let result;
-      if (isLogin) {
-        result = await AuthService.signIn(email, password);
-      } else {
-        result = await AuthService.signUp(email, password);
-      }
+      const ok = isLogin
+        ? await signIn(email, password)
+        : await signUp(email, password);
 
-      if (result.success) {
+      if (ok) {
         console.log('✅ Autenticazione riuscita');
         onAuthSuccess();
       } else {
-        Alert.alert(
-          'Errore',
-          result.error || 'Si è verificato un errore',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Errore', 'Credenziali non valide o registrazione fallita', [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('❌ Errore autenticazione:', error);
@@ -103,17 +101,12 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
       setLoading(true);
       console.log('👻 Login come ospite...');
 
-      const result = await AuthService.signInAsGuest();
-      
-      if (result.success) {
+      const ok = await signInAsGuest();
+      if (ok) {
         console.log('✅ Login guest riuscito');
         onAuthSuccess();
       } else {
-        Alert.alert(
-          'Errore',
-          result.error || 'Impossibile creare account ospite',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Errore', 'Impossibile creare account ospite', [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('❌ Errore login guest:', error);
@@ -181,8 +174,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.logo}>🍽️</Text>
-          <Text style={styles.title}>Restaurant Finder</Text>
+          <Image source={require('../../assets/NearBiteLogo.png')} style={styles.logoImg} />
           <Text style={styles.subtitle}>
             {isLogin ? 'Benvenuto!' : 'Crea il tuo account'}
           </Text>
@@ -205,31 +197,49 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>🔒 Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Almeno 6 caratteri"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={[styles.input, styles.inputWithToggle]}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Almeno 6 caratteri"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.toggleSecure}
+                onPress={() => setShowPassword((v) => !v)}
+                disabled={loading}
+              >
+                <Text style={styles.toggleSecureText}>{showPassword ? 'Nascondi' : 'Mostra'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {!isLogin && (
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>🔒 Conferma Password</Text>
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Ripeti la password"
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={[styles.input, styles.inputWithToggle]}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Ripeti la password"
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  style={styles.toggleSecure}
+                  onPress={() => setShowConfirmPassword((v) => !v)}
+                  disabled={loading}
+                >
+                  <Text style={styles.toggleSecureText}>{showConfirmPassword ? 'Nascondi' : 'Mostra'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -312,15 +322,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+  logoImg: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
@@ -355,6 +361,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
     color: '#333',
+  },
+  inputWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  inputWithToggle: {
+    paddingRight: 70,
+  },
+  toggleSecure: {
+    position: 'absolute',
+    right: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+  },
+  toggleSecureText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '600',
   },
   primaryButton: {
     backgroundColor: '#FF6B6B',

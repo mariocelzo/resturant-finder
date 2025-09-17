@@ -17,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { searchNearbyRestaurants, Restaurant } from '../services/googlePlaces';
 import { RootStackParamList } from '../../App';
 import FilterModal, { FilterOptions } from '../components/FilterModal';
+import FavoriteButton from '../components/FavoriteButton';
 
 const NAPLES = { LAT: 40.8522, LNG: 14.2681 };
 
@@ -267,9 +268,12 @@ export default function RestaurantListScreen() {
         <View style={styles.restaurantInfo}>
           <View style={styles.headerRow}>
             <Text style={styles.restaurantName}>{item.name}</Text>
-            {item.distance && (
-              <Text style={styles.distance}>📍 {formatDistance(item.distance)}</Text>
-            )}
+            <View style={styles.headerActions}>
+              {item.distance && (
+                <Text style={styles.distance}>📍 {formatDistance(item.distance)}</Text>
+              )}
+              <FavoriteButton restaurant={item} size="sm" style={styles.favoriteButton} />
+            </View>
           </View>
           
           <Text style={styles.restaurantAddress}>{item.address}</Text>
@@ -549,6 +553,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  favoriteButton: {
+    marginLeft: 8,
   },
   restaurantName: {
     fontSize: 18,

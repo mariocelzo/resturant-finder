@@ -22,6 +22,11 @@ export class FavoritesService {
         return false;
       }
 
+      // Se è un guest user, salva in AsyncStorage
+      if (user.isGuest) {
+        return await this.addToGuestFavorites(restaurant);
+      }
+
       const { data, error } = await supabase
         .from('favorites')
         .insert([
