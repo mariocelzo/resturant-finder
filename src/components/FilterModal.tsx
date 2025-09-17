@@ -11,9 +11,10 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { placesAutocomplete, getPlaceDetails, geocodeLocation } from '../services/googlePlaces';
-import * as Location from 'expo-location';
 import { UserProfileService, UserLocation } from '../services/userProfileService';
 import { useLocationSelection } from '../contexts/LocationContext';
+import SavedLocationChips from './SavedLocationChips';
+import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 export interface FilterOptions {
   cuisineTypes: string[];
@@ -53,11 +54,13 @@ const CUISINE_OPTIONS = [
   'Steakhouse',
   'Fast Food',
   'Dessert',
+  'Caffè',
+  'Bar',
+  'Pasticceria',
 ];
 
 const SORT_OPTIONS = [
   { value: 'rating', label: '⭐ Per Rating', icon: '⭐' },
-  { value: 'distance', label: '📍 Per Distanza', icon: '📍' },
   { value: 'price', label: '💰 Per Prezzo', icon: '💰' },
 ];
 
@@ -74,6 +77,7 @@ export default function FilterModal({
   const [typingTimer, setTypingTimer] = useState<NodeJS.Timeout | null>(null);
   const [savedLocations, setSavedLocations] = useState<UserLocation[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
+  const { getCurrentLocation } = useCurrentLocation();
 
   useEffect(() => {
     setQueryInput(currentFilters.locationQuery || locationQuery || '');
@@ -93,24 +97,17 @@ export default function FilterModal({
   }, [visible]);
 
   const chooseCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return;
-      }
-      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setSelectedSavedId('current');
-      setManualLocation('Posizione attuale', {
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-        formattedAddress: 'Posizione attuale',
-      });
-      setQueryInput('Posizione attuale');
-      setFilters(prev => ({ ...prev, locationQuery: 'Posizione attuale' }));
-      setSuggestions([]);
-    } catch (e) {
-      // ignore
-    }
+    const cur = await getCurrentLocation();
+    if (!cur) return;
+    setSelectedSavedId('current');
+    setManualLocation('Posizione attuale', {
+      latitude: cur.latitude,
+      longitude: cur.longitude,
+      formattedAddress: 'Posizione attuale',
+    });
+    setQueryInput('Posizione attuale');
+    setFilters(prev => ({ ...prev, locationQuery: 'Posizione attuale' }));
+    setSuggestions([]);
   };
 
   useEffect(() => {
@@ -149,7 +146,7 @@ export default function FilterModal({
       minRating: 0,
       maxDistance: 5000,
       showOnlyOpen: false,
-      sortBy: 'rating',
+      sortBy: 'distance',
       locationQuery: '',
     };
     setFilters(resetFilters);
@@ -208,6 +205,9 @@ export default function FilterModal({
       'Steakhouse': '🥩',
       'Fast Food': '🍟',
       'Dessert': '🍰',
+      'Caffè': '☕',
+      'Bar': '🍹',
+      'Pasticceria': '🥐',
       'Asiatica': '🍜',
     };
     return icons[cuisine] || '🍽️';
@@ -220,7 +220,7 @@ export default function FilterModal({
     if (filters.minRating > 0) count++;
     if (filters.maxDistance < 5000) count++;
     if (filters.showOnlyOpen) count++;
-    if (filters.sortBy !== 'rating') count++;
+    if (filters.sortBy && filters.sortBy !== 'distance') count++;
     return count;
   };
 
@@ -341,35 +341,17 @@ export default function FilterModal({
           {/* Località manuale */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>⭐ Posizioni Salvate</Text>
-            {savedLocations.length === 0 ? (
-              <Text style={styles.helperText}>Nessuna posizione salvata. Aggiungila dalla tua area profilo.</Text>
-            ) : (
-              <View style={styles.savedList}>
-                <TouchableOpacity
-                  key={'current-location'}
-                  style={[styles.savedChip, selectedSavedId === 'current' && styles.savedChipActive]}
-                  onPress={chooseCurrentLocation}
-                >
-                  <Text style={[styles.savedChipText, selectedSavedId === 'current' && styles.savedChipTextActive]}>📱 Posizione attuale</Text>
-                </TouchableOpacity>
-                {savedLocations.map((loc) => (
-                  <TouchableOpacity
-                    key={loc.id}
-                    style={[styles.savedChip, selectedSavedId === loc.id && styles.savedChipActive]}
-                    onPress={() => {
-                      setSelectedSavedId(loc.id || null);
-                      setManualLocation(loc.name, { latitude: loc.latitude, longitude: loc.longitude, formattedAddress: loc.address });
-                      setQueryInput(loc.address);
-                      setFilters(prev => ({ ...prev, locationQuery: loc.address }));
-                    }}
-                  >
-                    <Text style={[styles.savedChipText, selectedSavedId === loc.id && styles.savedChipTextActive]}>
-                      {loc.type === 'home' ? '🏠' : loc.type === 'work' ? '🏢' : '📍'} {loc.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+            <SavedLocationChips
+              savedLocations={savedLocations}
+              selectedId={selectedSavedId}
+              onSelectCurrent={chooseCurrentLocation}
+              onSelectSaved={(loc) => {
+                setSelectedSavedId(loc.id || null);
+                setManualLocation(loc.name, { latitude: loc.latitude, longitude: loc.longitude, formattedAddress: loc.address });
+                setQueryInput(loc.address);
+                setFilters(prev => ({ ...prev, locationQuery: loc.address }));
+              }}
+            />
           </View>
 
           {/* Località manuale */}
@@ -709,30 +691,6 @@ const styles = StyleSheet.create({
   sortTextActive: {
     color: '#fff',
     fontWeight: '600',
-  },
-  savedList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  savedChip: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  savedChipActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
-  },
-  savedChipText: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  savedChipTextActive: {
-    color: '#fff',
   },
   footer: {
     backgroundColor: '#fff',

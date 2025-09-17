@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, ActivityIndicator, Modal, TextInput, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, Alert, Text, ActivityIndicator, Modal, TextInput, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { searchNearbyRestaurants, Restaurant, geocodeLocation, placesAutocomplete, getPlaceDetails } from '../services/googlePlaces';
@@ -8,6 +8,8 @@ import { useLocationSelection } from '../contexts/LocationContext';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
+import MapPreviewCard from '../components/MapPreviewCard';
+import { useCurrentLocation } from '../hooks/useCurrentLocation';
 
 function MapScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -21,6 +23,11 @@ function MapScreen() {
   const [suggestions, setSuggestions] = useState<{ description: string; placeId: string }[]>([]);
   const { setManualLocation, locationQuery: selectedQuery, coordinates: selectedCoords } = useLocationSelection();
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const { getCurrentLocation: fetchCurrentCoords } = useCurrentLocation();
+  const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const skipNextRegionChangeRef = useRef<boolean>(false);
+  const regionDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const prevRegionRef = useRef<Region | null>(null);
 
   useEffect(() => {
     console.log('🗺️ MapScreen mounted');
@@ -38,11 +45,16 @@ function MapScreen() {
         timestamp: Date.now(),
       } as unknown as Location.LocationObject;
       setLocation(fakeLoc);
+      skipNextRegionChangeRef.current = true;
       setRegion({ latitude: selectedCoords.latitude, longitude: selectedCoords.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-      (async () => {
-        const nearby = await searchNearbyRestaurants(selectedCoords.latitude, selectedCoords.longitude);
-        setRestaurants(nearby);
-      })();
+      const lat = selectedCoords.latitude; const lng = selectedCoords.longitude;
+      if (!lastCoordsRef.current || lastCoordsRef.current.lat !== lat || lastCoordsRef.current.lng !== lng) {
+        lastCoordsRef.current = { lat, lng };
+        (async () => {
+          const nearby = await searchNearbyRestaurants(lat, lng);
+          setRestaurants(nearby);
+        })();
+      }
     } else {
       getCurrentLocation();
     }
@@ -51,13 +63,18 @@ function MapScreen() {
   // Se cambia la località selezionata dai filtri, aggiorna mappa e risultati
   useEffect(() => {
     if (!selectedCoords) return;
-    const fakeLoc = { coords: { latitude: selectedCoords.latitude, longitude: selectedCoords.longitude, altitude: null, accuracy: null, heading: null, speed: null, altitudeAccuracy: null }, timestamp: Date.now(), } as unknown as Location.LocationObject;
+    const lat = selectedCoords.latitude; const lng = selectedCoords.longitude;
+    const fakeLoc = { coords: { latitude: lat, longitude: lng, altitude: null, accuracy: null, heading: null, speed: null, altitudeAccuracy: null }, timestamp: Date.now(), } as unknown as Location.LocationObject;
     setLocation(fakeLoc);
-    setRegion({ latitude: selectedCoords.latitude, longitude: selectedCoords.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-    (async () => {
-      const nearby = await searchNearbyRestaurants(selectedCoords.latitude, selectedCoords.longitude);
-      setRestaurants(nearby);
-    })();
+    skipNextRegionChangeRef.current = true;
+    setRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+    if (!lastCoordsRef.current || lastCoordsRef.current.lat !== lat || lastCoordsRef.current.lng !== lng) {
+      lastCoordsRef.current = { lat, lng };
+      (async () => {
+        const nearby = await searchNearbyRestaurants(lat, lng);
+        setRestaurants(nearby);
+      })();
+    }
   }, [selectedCoords]);
 
   // Autocomplete: aggiorna suggerimenti quando cambia query
@@ -95,6 +112,7 @@ function MapScreen() {
           timestamp: Date.now(),
         };
         setLocation(defaultLocation);
+        skipNextRegionChangeRef.current = true;
         setRegion({ latitude: 40.8522, longitude: 14.2681, latitudeDelta: 0.01, longitudeDelta: 0.01 });
         
         // Cerca ristoranti con posizione default
@@ -112,6 +130,7 @@ function MapScreen() {
         });
         
         setLocation(currentLocation);
+        skipNextRegionChangeRef.current = true;
         setRegion({ latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 });
         
         // Cerca ristoranti nelle vicinanze
@@ -148,6 +167,41 @@ function MapScreen() {
     }
   };
 
+  // Ricerca automatica al termine di pan/zoom
+  const handleRegionChangeComplete = (r: Region) => {
+    if (skipNextRegionChangeRef.current) {
+      skipNextRegionChangeRef.current = false;
+      prevRegionRef.current = r;
+      return;
+    }
+
+    setSelectedRestaurant(null);
+    setRegion(r);
+
+    // Evita fetch se movimento minimo e zoom simile
+    if (prevRegionRef.current) {
+      const prev = prevRegionRef.current;
+      const dLat = (r.latitude - prev.latitude) * Math.PI / 180;
+      const dLon = (r.longitude - prev.longitude) * Math.PI / 180;
+      const a = Math.sin(dLat/2) ** 2 + Math.cos(r.latitude * Math.PI / 180) * Math.cos(prev.latitude * Math.PI / 180) * Math.sin(dLon/2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const meters = 6371000 * c;
+      const zoomChange = Math.abs((r.latitudeDelta - prev.latitudeDelta) / (prev.latitudeDelta || 1));
+      if (meters < 150 && zoomChange < 0.15) {
+        prevRegionRef.current = r;
+        return;
+      }
+    }
+    prevRegionRef.current = r;
+
+    if (regionDebounceRef.current) clearTimeout(regionDebounceRef.current);
+    regionDebounceRef.current = setTimeout(async () => {
+      const approxRadius = Math.min(50000, Math.max(1000, r.latitudeDelta * 111000 * 0.5));
+      const data = await searchNearbyRestaurants(r.latitude, r.longitude, approxRadius);
+      setRestaurants(data);
+    }, 400);
+  };
+
   // FIXED: Gestione stati di loading e errore
   if (loading) {
     return (
@@ -176,6 +230,7 @@ function MapScreen() {
         region={region || { latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
         showsUserLocation
         showsMyLocationButton
+        onRegionChangeComplete={handleRegionChangeComplete}
       >
         {restaurants.map((restaurant) => (
           <Marker
@@ -208,34 +263,11 @@ function MapScreen() {
 
       {/* Mini preview del ristorante selezionato */}
       {selectedRestaurant && (
-        <TouchableOpacity
-          activeOpacity={0.95}
-          style={styles.previewCard}
+        <MapPreviewCard
+          restaurant={selectedRestaurant}
+          onClose={() => setSelectedRestaurant(null)}
           onPress={() => navigation.navigate('RestaurantDetail', { restaurant: selectedRestaurant })}
-        >
-          <View style={styles.previewRow}>
-            <View style={styles.previewImageWrap}>
-              {selectedRestaurant.photoUrl ? (
-                <Image source={{ uri: selectedRestaurant.photoUrl }} style={styles.previewImage} />
-              ) : (
-                <View style={styles.previewPlaceholder}>
-                  <Text style={{ fontSize: 18 }}>🍽️</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.previewContent}>
-              <Text style={styles.previewTitle} numberOfLines={1}>{selectedRestaurant.name}</Text>
-              <Text style={styles.previewSubtitle} numberOfLines={1}>{selectedRestaurant.cuisine_type || 'Ristorante'}</Text>
-              <Text style={styles.previewRating}>⭐ {selectedRestaurant.rating?.toFixed(1) || 'N/A'}/5 {selectedRestaurant.isOpen ? '• Aperto' : '• Chiuso'}</Text>
-            </View>
-            <TouchableOpacity style={styles.previewClose} onPress={() => setSelectedRestaurant(null)}>
-              <Text style={styles.previewCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.previewFooter}>
-            <Text style={styles.previewHint}>Tocca di nuovo il pin o questo riquadro per i dettagli</Text>
-          </View>
-        </TouchableOpacity>
+        />
       )}
 
       {/* Modal di ricerca località */}
@@ -257,6 +289,23 @@ function MapScreen() {
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                style={[styles.modalSearch, { backgroundColor: '#f0f0f0', marginRight: 8 }]}
+                onPress={async () => {
+                  const cur = await fetchCurrentCoords();
+                  if (!cur) return;
+                  const fakeLoc = { coords: { latitude: cur.latitude, longitude: cur.longitude, altitude: null, accuracy: null, heading: null, speed: null, altitudeAccuracy: null }, timestamp: Date.now(), } as unknown as Location.LocationObject;
+                  setLocation(fakeLoc);
+                  skipNextRegionChangeRef.current = true;
+                  setRegion({ latitude: cur.latitude, longitude: cur.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+                  const nearby = await searchNearbyRestaurants(cur.latitude, cur.longitude);
+                  setRestaurants(nearby);
+                  setManualLocation('Posizione attuale', { latitude: cur.latitude, longitude: cur.longitude, formattedAddress: 'Posizione attuale' });
+                  setSearchVisible(false);
+                }}
+              >
+                <Text style={[styles.modalSearchText, { color: '#333' }]}>📱 Attuale</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.modalSearch}
                 onPress={async () => {
                   const q = searchQuery.trim();
@@ -267,6 +316,7 @@ function MapScreen() {
                   setLocation(fakeLoc);
                   const nearby = await searchNearbyRestaurants(geo.latitude, geo.longitude);
                   setRestaurants(nearby);
+                  skipNextRegionChangeRef.current = true;
                   setRegion({ latitude: geo.latitude, longitude: geo.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
                   setManualLocation(q, { latitude: geo.latitude, longitude: geo.longitude, formattedAddress: geo.formattedAddress });
                   setSearchVisible(false);
@@ -285,6 +335,7 @@ function MapScreen() {
                       if (!details) return;
                       const fakeLoc = { coords: { latitude: details.latitude, longitude: details.longitude, altitude: null, accuracy: null, heading: null, speed: null, altitudeAccuracy: null }, timestamp: Date.now(), } as unknown as Location.LocationObject;
                       setLocation(fakeLoc);
+                      skipNextRegionChangeRef.current = true;
                       setRegion({ latitude: details.latitude, longitude: details.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
                       const nearby = await searchNearbyRestaurants(details.latitude, details.longitude);
                       setRestaurants(nearby);
@@ -414,32 +465,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalSearchText: { color: '#fff', fontWeight: '700' },
-  previewCard: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-    padding: 12,
-  },
-  previewRow: { flexDirection: 'row', alignItems: 'center' },
-  previewImageWrap: { width: 72, height: 72, borderRadius: 8, overflow: 'hidden', marginRight: 12 },
-  previewImage: { width: '100%', height: '100%' },
-  previewPlaceholder: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF3F2' },
-  previewContent: { flex: 1 },
-  previewTitle: { fontSize: 16, fontWeight: '700', color: '#333' },
-  previewSubtitle: { fontSize: 12, color: '#666', marginTop: 2 },
-  previewRating: { fontSize: 12, color: '#444', marginTop: 6, fontWeight: '600' },
-  previewClose: { padding: 6, marginLeft: 6 },
-  previewCloseText: { fontSize: 16, color: '#999' },
-  previewFooter: { marginTop: 8 },
-  previewHint: { fontSize: 11, color: '#999' },
 });
 
 export default MapScreen;

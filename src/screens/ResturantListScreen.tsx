@@ -53,7 +53,7 @@ export default function RestaurantListScreen() {
     minRating: 0,
     maxDistance: 5000,
     showOnlyOpen: false,
-    sortBy: 'rating',
+    sortBy: 'distance',
     locationQuery: selectedQuery || '',
   });
 
@@ -228,19 +228,15 @@ export default function RestaurantListScreen() {
     });
 
     // Ordinamento
-    switch (filters.sortBy) {
-      case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
-        console.log('📊 Ordinato per rating');
-        break;
-      case 'distance':
-        filtered.sort((a, b) => (a.distance || 0) - (b.distance || 0));
-        console.log('📊 Ordinato per distanza');
-        break;
-      case 'price':
-        filtered.sort((a, b) => (a.priceLevel || 1) - (b.priceLevel || 1));
-        console.log('📊 Ordinato per prezzo');
-        break;
+    if (filters.sortBy === 'rating') {
+      filtered.sort((a, b) => b.rating - a.rating);
+      console.log('📊 Ordinato per rating');
+    } else if (filters.sortBy === 'price') {
+      filtered.sort((a, b) => (a.priceLevel || 1) - (b.priceLevel || 1));
+      console.log('📊 Ordinato per prezzo');
+    } else {
+      filtered.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      console.log('📊 Ordinato per distanza (default)');
     }
     
     console.log('📊 RISULTATO FILTRI:', filtered.length, 'su', restaurants.length, 'ristoranti');
@@ -316,7 +312,7 @@ export default function RestaurantListScreen() {
     if (filters.minRating > 0) count++;
     if (filters.maxDistance < 5000) count++;
     if (filters.showOnlyOpen) count++;
-    if (filters.sortBy !== 'rating') count++;
+    if (filters.sortBy && filters.sortBy !== 'distance') count++;
     return count;
   };
 

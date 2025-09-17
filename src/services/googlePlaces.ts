@@ -1,4 +1,14 @@
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
+const _nearbyCache: Map<string, { ts: number; data: Restaurant[] }> = new Map();
+const _inflight: Map<string, Promise<Restaurant[]>> = new Map();
+const TTL_MS = 120_000; // 2 minuti
+
+function makeKey(lat: number, lng: number, radius: number, maxResults: number): string {
+  const rl = Number.isFinite(radius) ? Math.min(Math.max(radius, 1), 50000) : 2000;
+  const latK = lat.toFixed(4);
+  const lngK = lng.toFixed(4);
+  return `${latK},${lngK},${rl},${maxResults},${GOOGLE_API_KEY ? 'live' : 'mock'}`;
+}
 
 export interface Restaurant {
   id: string;
@@ -36,6 +46,10 @@ function classifyCuisine(name: string, types: string[] = []): string {
   if (typeHas('seafood_restaurant')) return 'Seafood';
   if (typeHas('vegan_restaurant')) return 'Vegano';
   if (typeHas('vegetarian_restaurant')) return 'Vegetariana';
+  // Non-restaurant food places
+  if (typeHas('cafe')) return 'Caffè';
+  if (typeHas('bar')) return 'Bar';
+  if (typeHas('bakery')) return 'Dessert';
 
   // Keyword-based
   if (has('pizza') || has('pizzeria')) return 'Pizzeria';
@@ -57,6 +71,12 @@ function classifyCuisine(name: string, types: string[] = []): string {
   if (has('taco') || has('burrito') || has('mex')) return 'Messicano';
   if (has('curry') || has('tandoor') || has('masala')) return 'Indiano';
   if (has('gnocchi') || has('pasta')) return 'Italiano';
+  // Dessert and sweets
+  if (has('pasticceria') || has('pasticc') || has('pasticcini') || has('dolci') || has('dessert') || has('cake') || has('torta') || has('gelato')) return 'Dessert';
+  // Cafè / Coffee shop
+  if (has('cafe') || has('cafè') || has('caffè') || has('coffee')) return 'Caffè';
+  // Bar / Pub
+  if (has('bar ') || n.startsWith('bar ') || has('pub')) return 'Bar';
 
   if (typeHas('fast_food')) return 'Fast Food';
 
@@ -69,12 +89,24 @@ export const searchNearbyRestaurants = async (
   radius: number = 2000,
   maxResults: number = 60
 ): Promise<Restaurant[]> => {
-  
-  // Se non abbiamo API key, usa i mock
-  if (!GOOGLE_API_KEY) {
-    console.log('📄 GOOGLEPLACES: API Key mancante, usando mock data');
-    return mockSearch(latitude, longitude, radius);
+  const key = makeKey(latitude, longitude, radius, maxResults);
+  const now = Date.now();
+  const cached = _nearbyCache.get(key);
+  if (cached && (now - cached.ts) < TTL_MS) {
+    return cached.data;
   }
+  const inflight = _inflight.get(key);
+  if (inflight) return inflight;
+
+  // Wrapper per salvare in cache al termine
+  const exec = (async () => {
+    // Se non abbiamo API key, usa i mock
+    if (!GOOGLE_API_KEY) {
+      console.log('📄 GOOGLEPLACES: API Key mancante, usando mock data');
+      const data = await mockSearch(latitude, longitude, radius);
+      _nearbyCache.set(key, { ts: now, data });
+      return data;
+    }
 
   console.log('🌐 GOOGLEPLACES: Usando Google Places API');
   // Nearby Search supporta radius fino a 50km; clamp per evitare errori
@@ -163,11 +195,22 @@ export const searchNearbyRestaurants = async (
     } while (pageToken && pagesFetched < 3 && all.length < maxResults);
 
     console.log('✅ GOOGLEPLACES: Totale aggregato', all.length, 'ristoranti');
+    _nearbyCache.set(key, { ts: now, data: all });
     return all;
   } catch (error) {
     console.error('❌ GOOGLEPLACES: Errore di rete, usando fallback:', error);
     console.log('📄 GOOGLEPLACES: Fallback ai mock data');
-    return mockSearch(latitude, longitude, radius);
+    const data = await mockSearch(latitude, longitude, radius);
+    _nearbyCache.set(key, { ts: now, data });
+    return data;
+  }
+  })();
+  _inflight.set(key, exec);
+  try {
+    const res = await exec;
+    return res;
+  } finally {
+    _inflight.delete(key);
   }
 };
 
