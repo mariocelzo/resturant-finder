@@ -21,10 +21,6 @@ import { RootStackParamList } from '../../App';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 
-type RootStackParamList = {
-  RestaurantDetail: { restaurant: Restaurant };
-};
-
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
 export default function RestaurantDetailScreen() {

@@ -26,7 +26,7 @@ import { useLocationSelection } from '../contexts/LocationContext';
 const NAPLES = { LAT: 40.8522, LNG: 14.2681 };
 
 type NavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<TabParamList, 'Lista'>,
+  BottomTabNavigationProp<TabParamList, 'Search'>,
   StackNavigationProp<RootStackParamList>
 >;
 
