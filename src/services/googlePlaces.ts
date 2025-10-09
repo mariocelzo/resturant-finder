@@ -288,3 +288,43 @@ export const getPlaceDetails = async (placeId: string): Promise<GeocodedLocation
     return null;
   }
 };
+
+export interface PlaceReview {
+  id: string;
+  authorName: string;
+  rating: number;
+  text: string;
+  relativeTime: string;
+  profilePhotoUrl?: string;
+  language?: string;
+}
+
+export const fetchPlaceReviews = async (placeId: string, max: number = 10): Promise<PlaceReview[]> => {
+  if (!placeId) return [];
+  if (!GOOGLE_API_KEY) {
+    // Nessuna API key: niente recensioni live
+    return [];
+  }
+  // Google Place Details: fields=reviews (max 5 by default per payload)
+  // Per ottenere più recensioni si possono usare più richieste passando review_no_translations e reviews_sort
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=reviews&reviews_no_translations=true&reviews_sort=newest&key=${GOOGLE_API_KEY}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status !== 'OK' || !data.result) return [];
+    const reviews: any[] = data.result.reviews || [];
+    const mapped: PlaceReview[] = reviews.slice(0, max).map((r: any, idx: number) => ({
+      id: `${r.author_name || 'review'}_${r.time || idx}`,
+      authorName: r.author_name,
+      rating: r.rating || 0,
+      text: r.text || '',
+      relativeTime: r.relative_time_description || '',
+      profilePhotoUrl: r.profile_photo_url,
+      language: r.language
+    }));
+    return mapped;
+  } catch (e) {
+    console.error('❌ PLACE REVIEWS: Errore', e);
+    return [];
+  }
+};

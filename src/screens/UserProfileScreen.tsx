@@ -9,12 +9,17 @@ import {
   ActivityIndicator,
   Switch,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocationSelection } from '../contexts/LocationContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { UserProfileService, UserProfile, UserLocation } from '../services/userProfileService';
+import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '../services/supabase';
 import { useFavorites } from '../hooks/useFavorites';
 import { RootStackParamList } from '../../App';
 
@@ -29,6 +34,7 @@ export default function UserProfileScreen() {
   const { user, signOut } = useAuth();
   const { favoritesCount, favorites } = useFavorites();
   const { setManualLocation } = useLocationSelection();
+  const { theme, setThemeMode, themeMode } = useTheme();
 
   // Ricarica quando la schermata ottiene focus
   useFocusEffect(
@@ -120,15 +126,19 @@ export default function UserProfileScreen() {
   };
 
   const handleThemeToggle = async (newTheme: 'light' | 'dark' | 'auto') => {
-    if (!profile) return;
-
     try {
-      const success = await UserProfileService.updateUserProfile({ 
-        theme: newTheme 
-      });
-      
-      if (success) {
-        setProfile(prev => prev ? { ...prev, theme: newTheme } : null);
+      // Aggiorna subito il tema nell'app
+      setThemeMode(newTheme);
+
+      // Salva anche nel profilo se l'utente è autenticato
+      if (profile && !user?.isGuest) {
+        const success = await UserProfileService.updateUserProfile({
+          theme: newTheme
+        });
+
+        if (success) {
+          setProfile(prev => prev ? { ...prev, theme: newTheme } : null);
+        }
       }
     } catch (error) {
       console.error('❌ Errore cambio tema:', error);
@@ -164,99 +174,171 @@ export default function UserProfileScreen() {
   };
 
   const renderHeader = () => (
-    <View style={styles.header}>
+    <LinearGradient
+      colors={theme.isDark
+        ? [theme.surface, theme.background]
+        : [theme.cardBackground, theme.surface]
+      }
+      style={[styles.header, { backgroundColor: theme.cardBackground }]}
+    >
       <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '👤'}
-          </Text>
-        </View>
+        <TouchableOpacity
+          onPress={async () => {
+            try {
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (status !== 'granted') {
+                Alert.alert('Permesso negato', 'Consenti l\'accesso alle foto per caricare un avatar.');
+                return;
+              }
+              const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+              if (result.canceled || !result.assets?.length) return;
+              const asset = result.assets[0];
+              const resp = await fetch(asset.uri);
+              const blob = await resp.blob();
+              const fileExt = (asset.fileName || 'avatar.jpg').split('.').pop();
+              const filePath = `avatars/${(user?.id || 'guest')}_${Date.now()}.${fileExt}`;
+              const { error: uploadError } = await supabase.storage.from('public').upload(filePath, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
+              if (uploadError) { Alert.alert('Errore', 'Upload avatar fallito'); return; }
+              const { data } = supabase.storage.from('public').getPublicUrl(filePath);
+              const url = data.publicUrl;
+              const ok = await UserProfileService.updateUserProfile({ avatar_url: url });
+              if (ok) {
+                setProfile(prev => prev ? { ...prev, avatar_url: url } : prev);
+              }
+            } catch (e) {
+              console.error('❌ Avatar upload error', e);
+              Alert.alert('Errore', 'Impossibile caricare l\'avatar');
+            }
+          }}
+        >
+          <View style={styles.avatar}>
+            {profile?.avatar_url ? (
+              <View style={{ width: 80, height: 80, borderRadius: 40, overflow: 'hidden' }}>
+                {/* Use Image without importing new to keep consistency */}
+                {React.createElement(require('react-native').Image, { source: { uri: profile.avatar_url }, style: { width: '100%', height: '100%' } })}
+              </View>
+            ) : (
+              <Text style={styles.avatarText}>
+                {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '👤'}
+              </Text>
+            )}
+            {/* Plus badge */}
+            <View style={styles.plusBadge}><Text style={styles.plusText}>＋</Text></View>
+          </View>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.headerInfo}>
-        <Text style={styles.displayName}>
+        <Text style={[styles.displayName, { color: theme.text }]}>
           {profile?.display_name || user?.email?.split('@')[0] || 'Utente'}
         </Text>
-        <Text style={styles.email}>{user?.email}</Text>
-        
+        <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
+
         {user?.isGuest ? (
-          <View style={styles.guestBadge}>
-            <Text style={styles.guestBadgeText}>👻 Modalità Ospite</Text>
+          <View style={[styles.guestBadge, {
+            backgroundColor: theme.isDark ? theme.primary + '20' : '#E8F4FD',
+            borderColor: theme.primary,
+          }]}>
+            <Text style={[styles.guestBadgeText, { color: theme.primary }]}>👻 Modalità Ospite</Text>
           </View>
         ) : (
-          <Text style={styles.memberSince}>
+          <Text style={[styles.memberSince, { color: theme.textTertiary }]}>
             Membro da {formatMemberSince(profile?.member_since || '')}
           </Text>
         )}
       </View>
-    </View>
+    </LinearGradient>
   );
 
   const renderStats = () => (
-    <View style={styles.statsContainer}>
+    <View style={[styles.statsContainer, {
+      backgroundColor: theme.cardBackground,
+      shadowColor: theme.shadowColor,
+      borderBottomWidth: theme.isDark ? 1 : 0,
+      borderBottomColor: theme.border,
+    }]}>
       <View style={styles.statItem}>
-        <Text style={styles.statNumber}>{favoritesCount}</Text>
-        <Text style={styles.statLabel}>Preferiti</Text>
+        <Text style={[styles.statNumber, { color: theme.primary }]}>{favoritesCount}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Preferiti</Text>
       </View>
-      <View style={styles.statDivider} />
+      <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
       <View style={styles.statItem}>
-        <Text style={styles.statNumber}>{profile?.total_reviews || 0}</Text>
-        <Text style={styles.statLabel}>Recensioni</Text>
+        <Text style={[styles.statNumber, { color: theme.primary }]}>{profile?.total_reviews || 0}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Recensioni</Text>
       </View>
-      <View style={styles.statDivider} />
+      <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
       <View style={styles.statItem}>
-        <Text style={styles.statNumber}>{userLocations.length}</Text>
-        <Text style={styles.statLabel}>Posizioni</Text>
+        <Text style={[styles.statNumber, { color: theme.primary }]}>{userLocations.length}</Text>
+        <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Posizioni</Text>
       </View>
     </View>
   );
 
   const renderQuickActions = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>⚡ Azioni Rapide</Text>
-      
-      <TouchableOpacity 
-        style={styles.menuItem}
+    <View style={[styles.section, {
+      backgroundColor: theme.cardBackground,
+      shadowColor: theme.shadowColor,
+      borderWidth: theme.isDark ? 1 : 0,
+      borderColor: theme.border,
+    }]}>
+      <Text style={[styles.sectionTitle, {
+        color: theme.text,
+        borderBottomColor: theme.border
+      }]}>⚡ Azioni Rapide</Text>
+
+      <TouchableOpacity
+        style={[styles.menuItem, { borderBottomColor: theme.border }]}
         onPress={() => navigation.navigate('FavoritesList' as any)}
       >
         <Text style={styles.menuItemIcon}>❤️</Text>
         <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>I Miei Preferiti</Text>
-          <Text style={styles.menuItemSubtitle}>
+          <Text style={[styles.menuItemTitle, { color: theme.text }]}>I Miei Preferiti</Text>
+          <Text style={[styles.menuItemSubtitle, { color: theme.textSecondary }]}>
             {favoritesCount} ristorante{favoritesCount !== 1 ? 'i' : ''} salvato{favoritesCount !== 1 ? 'i' : ''}
           </Text>
         </View>
-        <Text style={styles.menuItemArrow}>›</Text>
+        <Text style={[styles.menuItemArrow, { color: theme.textTertiary }]}>›</Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.menuItem}
+
+      <TouchableOpacity
+        style={[styles.menuItem, { borderBottomColor: theme.border }]}
         onPress={() => {
           Alert.alert('Info', 'Funzionalità in arrivo!');
         }}
       >
         <Text style={styles.menuItemIcon}>📊</Text>
         <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>Le Mie Recensioni</Text>
-          <Text style={styles.menuItemSubtitle}>Gestisci le tue recensioni</Text>
+          <Text style={[styles.menuItemTitle, { color: theme.text }]}>Le Mie Recensioni</Text>
+          <Text style={[styles.menuItemSubtitle, { color: theme.textSecondary }]}>Gestisci le tue recensioni</Text>
         </View>
-        <Text style={styles.menuItemArrow}>›</Text>
+        <Text style={[styles.menuItemArrow, { color: theme.textTertiary }]}>›</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderLocations = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>📍 Posizioni Salvate</Text>
-      
+    <View style={[styles.section, {
+      backgroundColor: theme.cardBackground,
+      shadowColor: theme.shadowColor,
+      borderWidth: theme.isDark ? 1 : 0,
+      borderColor: theme.border,
+    }]}>
+      <Text style={[styles.sectionTitle, {
+        color: theme.text,
+        borderBottomColor: theme.border
+      }]}>📍 Posizioni Salvate</Text>
+
       {userLocations.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Nessuna posizione salvata</Text>
-          <TouchableOpacity 
-            style={styles.addLocationButton}
+          <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>Nessuna posizione salvata</Text>
+          <TouchableOpacity
+            style={[styles.addLocationButton, {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            }]}
             onPress={() => navigation.navigate('ManageLocations' as any)}
           >
-            <Text style={styles.addLocationText}>+ Aggiungi Posizione</Text>
+            <Text style={[styles.addLocationText, { color: theme.primary }]}>+ Aggiungi Posizione</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -266,36 +348,42 @@ export default function UserProfileScreen() {
               key={location.id}
               style={[
                 styles.locationItem,
-                location.isDefault && styles.locationItemDefault
+                { borderBottomColor: theme.border },
+                location.isDefault && {
+                  backgroundColor: theme.isDark ? theme.primary + '15' : '#FFF8F0'
+                }
               ]}
               onPress={() => handleSetDefaultLocation(location)}
             >
-              <View style={styles.locationIcon}>
+              <View style={[styles.locationIcon, { backgroundColor: theme.surface }]}>
                 <Text style={styles.locationIconText}>
-                  {location.type === 'home' ? '🏠' : 
-                   location.type === 'work' ? '🏢' : 
+                  {location.type === 'home' ? '🏠' :
+                   location.type === 'work' ? '🏢' :
                    location.isDefault ? '⭐' : '📍'}
                 </Text>
               </View>
-              
+
               <View style={styles.locationContent}>
-                <Text style={styles.locationName}>{location.name}</Text>
-                <Text style={styles.locationAddress}>{location.address}</Text>
+                <Text style={[styles.locationName, { color: theme.text }]}>{location.name}</Text>
+                <Text style={[styles.locationAddress, { color: theme.textSecondary }]}>{location.address}</Text>
               </View>
-              
+
               {location.isDefault && (
-                <View style={styles.defaultBadge}>
+                <View style={[styles.defaultBadge, { backgroundColor: theme.primary }]}>
                   <Text style={styles.defaultBadgeText}>Default</Text>
                 </View>
               )}
             </TouchableOpacity>
           ))}
-          
-          <TouchableOpacity 
-            style={styles.addLocationButton}
+
+          <TouchableOpacity
+            style={[styles.addLocationButton, {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            }]}
             onPress={() => navigation.navigate('ManageLocations' as any)}
           >
-            <Text style={styles.addLocationText}>+ Aggiungi Posizione</Text>
+            <Text style={[styles.addLocationText, { color: theme.primary }]}>+ Aggiungi Posizione</Text>
           </TouchableOpacity>
         </>
       )}
@@ -303,20 +391,30 @@ export default function UserProfileScreen() {
   );
 
   const renderSettings = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>⚙️ Impostazioni</Text>
-      
-      <View style={styles.settingItem}>
+    <View style={[styles.section, {
+      backgroundColor: theme.cardBackground,
+      shadowColor: theme.shadowColor,
+      borderWidth: theme.isDark ? 1 : 0,
+      borderColor: theme.border,
+    }]}>
+      <Text style={[styles.sectionTitle, {
+        color: theme.text,
+        borderBottomColor: theme.border
+      }]}>⚙️ Impostazioni</Text>
+
+      <View style={[styles.settingItem, { borderBottomColor: theme.border }]}>
         <Text style={styles.settingIcon}>🌙</Text>
         <View style={styles.settingContent}>
-          <Text style={styles.settingTitle}>Tema</Text>
-          <Text style={styles.settingSubtitle}>
-            {profile?.theme === 'light' ? 'Chiaro' : 
+          <Text style={[styles.settingTitle, { color: theme.text }]}>Tema</Text>
+          <Text style={[styles.settingSubtitle, { color: theme.textSecondary }]}>
+            {profile?.theme === 'light' ? 'Chiaro' :
              profile?.theme === 'dark' ? 'Scuro' : 'Automatico'}
           </Text>
         </View>
-        <TouchableOpacity 
-          style={styles.themeButton}
+        <TouchableOpacity
+          style={[styles.themeButton, {
+            backgroundColor: theme.surface,
+          }]}
           onPress={() => {
             const themes: ('light' | 'dark' | 'auto')[] = ['light', 'dark', 'auto'];
             const currentIndex = themes.indexOf(profile?.theme || 'auto');
@@ -324,44 +422,52 @@ export default function UserProfileScreen() {
             handleThemeToggle(nextTheme);
           }}
         >
-          <Text style={styles.themeButtonText}>Cambia</Text>
+          <Text style={[styles.themeButtonText, { color: theme.text }]}>Cambia</Text>
         </TouchableOpacity>
       </View>
-      
-      <View style={styles.settingItem}>
+
+      <View style={[styles.settingItem, { borderBottomColor: theme.border }]}>
         <Text style={styles.settingIcon}>🔔</Text>
         <View style={styles.settingContent}>
-          <Text style={styles.settingTitle}>Notifiche</Text>
-          <Text style={styles.settingSubtitle}>Ricevi notifiche push</Text>
+          <Text style={[styles.settingTitle, { color: theme.text }]}>Notifiche</Text>
+          <Text style={[styles.settingSubtitle, { color: theme.textSecondary }]}>Ricevi notifiche push</Text>
         </View>
         <Switch
           value={profile?.notifications_enabled || false}
           onValueChange={handleNotificationsToggle}
-          trackColor={{ false: '#ddd', true: '#FF6B6B' }}
+          trackColor={{ false: theme.border, true: theme.primary }}
           thumbColor="#fff"
         />
       </View>
-      
-      <View style={styles.settingItem}>
+
+      <View style={[styles.settingItem, { borderBottomColor: theme.border }]}>
         <Text style={styles.settingIcon}>📍</Text>
         <View style={styles.settingContent}>
-          <Text style={styles.settingTitle}>Raggio di Ricerca</Text>
-          <Text style={styles.settingSubtitle}>
+          <Text style={[styles.settingTitle, { color: theme.text }]}>Raggio di Ricerca</Text>
+          <Text style={[styles.settingSubtitle, { color: theme.textSecondary }]}>
             {((profile?.default_search_radius || 5000) / 1000).toFixed(1)} km
           </Text>
         </View>
-        <TouchableOpacity style={styles.settingButton}>
-          <Text style={styles.settingButtonText}>Modifica</Text>
+        <TouchableOpacity style={[styles.settingButton, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.settingButtonText, { color: theme.text }]}>Modifica</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
   const renderActions = () => (
-    <View style={styles.section}>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+    <View style={[styles.section, {
+      backgroundColor: theme.cardBackground,
+      shadowColor: theme.shadowColor,
+      borderWidth: theme.isDark ? 1 : 0,
+      borderColor: theme.border,
+    }]}>
+      <TouchableOpacity style={[styles.logoutButton, {
+        backgroundColor: theme.isDark ? theme.error + '20' : '#FFF3F3',
+        borderColor: theme.isDark ? theme.error + '40' : '#FFE8E8',
+      }]} onPress={handleLogout}>
         <Text style={styles.logoutIcon}>👋</Text>
-        <Text style={styles.logoutText}>
+        <Text style={[styles.logoutText, { color: theme.error }]}>
           {user?.isGuest ? 'Esci da Modalità Ospite' : 'Disconnetti'}
         </Text>
       </TouchableOpacity>
@@ -370,23 +476,23 @@ export default function UserProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
-        <Text style={styles.loadingText}>Caricando profilo...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Caricando profilo...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => loadProfile(true)}
-          tintColor="#FF6B6B"
-          colors={['#FF6B6B']}
+          tintColor={theme.primary}
+          colors={[theme.primary]}
         />
       }
       showsVerticalScrollIndicator={false}
@@ -400,9 +506,9 @@ export default function UserProfileScreen() {
       
       {/* Footer info */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Restaurant Finder v1.0.0</Text>
-        <Text style={styles.footerText}>
-          {user?.isGuest 
+        <Text style={[styles.footerText, { color: theme.textTertiary }]}>Restaurant Finder v1.0.0</Text>
+        <Text style={[styles.footerText, { color: theme.textTertiary }]}>
+          {user?.isGuest
             ? '👻 I dati ospite sono salvati solo su questo dispositivo'
             : '☁️ I tuoi dati sono sincronizzati nel cloud'
           }
@@ -458,12 +564,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 5,
+    position: 'relative',
   },
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#fff',
   },
+  plusBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusText: { color: '#FF6B6B', fontWeight: '800', lineHeight: 20 },
   headerInfo: {
     alignItems: 'center',
   },

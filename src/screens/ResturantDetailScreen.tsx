@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,18 @@ import {
   Linking,
   Alert,
   Image,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Restaurant } from '../services/googlePlaces';
+import { fetchPlaceReviews, PlaceReview } from '../services/googlePlaces';
+import { ReviewsService, UserReview } from '../services/reviewsService';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../App';
 import { RouteProp, useRoute } from '@react-navigation/native';
+import { useTheme } from '../contexts/ThemeContext';
 
 type RootStackParamList = {
   RestaurantDetail: { restaurant: Restaurant };
@@ -22,6 +30,33 @@ type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail
 export default function RestaurantDetailScreen() {
   const route = useRoute<RestaurantDetailRouteProp>();
   const { restaurant } = route.params;
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
+
+  const [reviews, setReviews] = useState<PlaceReview[] | null>(null);
+  const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const [userReviews, setUserReviews] = useState<UserReview[] | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setReviewsLoading(true);
+        setReviewsError(null);
+        const data = await fetchPlaceReviews(restaurant.id, 8);
+        if (mounted) setReviews(data);
+        const u = await ReviewsService.listForPlace(restaurant.id);
+        if (mounted) setUserReviews(u);
+      } catch (e) {
+        if (mounted) setReviewsError('Impossibile caricare le recensioni');
+      } finally {
+        if (mounted) setReviewsLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [restaurant.id]);
 
   const handleCall = () => {
     if (restaurant.phone) {
@@ -57,6 +92,10 @@ export default function RestaurantDetailScreen() {
     } else {
       Alert.alert('Condividi', shareText);
     }
+  };
+
+  const handleAddReview = () => {
+    navigation.navigate('AddReview', { placeId: restaurant.id, restaurantName: restaurant.name });
   };
 
   const getPriceLevelText = (level?: number) => {
@@ -99,17 +138,23 @@ export default function RestaurantDetailScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
       {/* Header con immagine */}
       <View style={styles.headerContainer}>
         {restaurant.photoUrl ? (
           <Image source={{ uri: restaurant.photoUrl }} style={styles.heroImage} />
         ) : (
-          <View style={styles.placeholderImage}>
+          <LinearGradient
+            colors={theme.isDark
+              ? [theme.primary + '60', theme.primary + '40']
+              : [theme.primary + '40', theme.primary + '20']
+            }
+            style={styles.placeholderImage}
+          >
             <Text style={styles.placeholderIcon}>
               {getCuisineIcon(restaurant.cuisine_type)}
             </Text>
-          </View>
+          </LinearGradient>
         )}
         
         {/* Overlay con status */}
@@ -126,90 +171,156 @@ export default function RestaurantDetailScreen() {
       </View>
 
       {/* Informazioni principali */}
-      <View style={styles.infoContainer}>
+      <View style={[styles.infoContainer, {
+        backgroundColor: theme.cardBackground,
+        shadowColor: theme.shadowColor,
+        borderWidth: theme.isDark ? 1 : 0,
+        borderColor: theme.border,
+      }]}>
         <View style={styles.titleRow}>
-          <Text style={styles.restaurantName}>{restaurant.name}</Text>
-          <View style={styles.ratingContainer}>
-            <Text style={styles.ratingText}>⭐ {restaurant.rating}</Text>
+          <Text style={[styles.restaurantName, { color: theme.text }]}>{restaurant.name}</Text>
+          <View style={[styles.ratingContainer, { backgroundColor: theme.primary + '20' }]}>
+            <Text style={[styles.ratingText, { color: theme.primary }]}>⭐ {restaurant.rating}</Text>
           </View>
         </View>
 
         <View style={styles.metaRow}>
-          <Text style={styles.cuisineText}>
+          <Text style={[styles.cuisineText, { color: theme.textSecondary }]}>
             {getCuisineIcon(restaurant.cuisine_type)} {restaurant.cuisine_type}
           </Text>
-          <Text style={styles.priceText}>
+          <Text style={[styles.priceText, { color: theme.success }]}>
             {getPriceLevelText(restaurant.priceLevel)}
           </Text>
         </View>
 
-        <Text style={styles.addressText}>📍 {restaurant.address}</Text>
+        <Text style={[styles.addressText, { color: theme.textSecondary }]}>📍 {restaurant.address}</Text>
       </View>
 
       {/* Pulsanti azione */}
-      <View style={styles.actionButtonsContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
+      <View style={[styles.actionButtonsContainer, { backgroundColor: theme.cardBackground }]}>
+        <TouchableOpacity style={[styles.actionButton, {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+        }]} onPress={handleCall}>
           <Text style={styles.actionButtonIcon}>📞</Text>
-          <Text style={styles.actionButtonText}>Chiama</Text>
+          <Text style={[styles.actionButtonText, { color: theme.text }]}>Chiama</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleDirections}>
+        <TouchableOpacity style={[styles.actionButton, {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+        }]} onPress={handleDirections}>
           <Text style={styles.actionButtonIcon}>🗺️</Text>
-          <Text style={styles.actionButtonText}>Indicazioni</Text>
+          <Text style={[styles.actionButtonText, { color: theme.text }]}>Indicazioni</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+        <TouchableOpacity style={[styles.actionButton, {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+        }]} onPress={handleShare}>
           <Text style={styles.actionButtonIcon}>📤</Text>
-          <Text style={styles.actionButtonText}>Condividi</Text>
+          <Text style={[styles.actionButtonText, { color: theme.text }]}>Condividi</Text>
         </TouchableOpacity>
       </View>
 
       {/* Sezione recensioni */}
-      <View style={styles.reviewsContainer}>
-        <Text style={styles.sectionTitle}>📝 Recensioni</Text>
-        
-        {mockReviews.map((review) => (
-          <View key={review.id} style={styles.reviewCard}>
-            <View style={styles.reviewHeader}>
-              <Text style={styles.reviewAuthor}>{review.author}</Text>
-              <View style={styles.reviewRating}>
-                <Text style={styles.reviewRatingText}>
-                  {'⭐'.repeat(review.rating)}
-                </Text>
+      <View style={[styles.reviewsContainer, {
+        backgroundColor: theme.cardBackground,
+        borderWidth: theme.isDark ? 1 : 0,
+        borderColor: theme.border,
+      }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>📝 Recensioni</Text>
+        <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 8 }} onPress={handleAddReview}>
+          <Text style={{ color: theme.primary, fontWeight: '700' }}>+ Aggiungi recensione</Text>
+        </TouchableOpacity>
+        {reviewsLoading && (
+          <Text style={{ color: theme.textSecondary }}>Caricamento recensioni...</Text>
+        )}
+        {!reviewsLoading && reviewsError && (
+          <Text style={{ color: theme.error }}>{ reviewsError}</Text>
+        )}
+        {!reviewsLoading && !reviewsError && Array.isArray(reviews) && reviews.length === 0 && (
+          <Text style={{ color: theme.textSecondary }}>Nessuna recensione disponibile</Text>
+        )}
+        {!reviewsLoading && !reviewsError && Array.isArray(reviews) && reviews.length > 0 && (
+          <>
+            {reviews.map((review) => (
+              <View key={review.id} style={[styles.reviewCard, {
+                backgroundColor: theme.surface,
+                borderWidth: theme.isDark ? 1 : 0,
+                borderColor: theme.border,
+              }]}>
+                <View style={styles.reviewHeader}>
+                  <Text style={[styles.reviewAuthor, { color: theme.text }]}>{review.authorName}</Text>
+                  <View style={[styles.reviewRating, { backgroundColor: theme.primary + '15' }]}>
+                    <Text style={styles.reviewRatingText}>
+                      {'⭐'.repeat(Math.max(0, Math.min(5, Math.round(review.rating))))}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.reviewText, { color: theme.textSecondary }]}>{review.text}</Text>
+                {review.relativeTime ? (
+                  <Text style={[styles.reviewDate, { color: theme.textTertiary }]}>{review.relativeTime}</Text>
+                ) : null}
               </View>
-            </View>
-            <Text style={styles.reviewText}>{review.text}</Text>
-            <Text style={styles.reviewDate}>{review.date}</Text>
+            ))}
+          </>
+        )}
+
+        {/* Recensioni utenti app */}
+        {Array.isArray(userReviews) && userReviews.length > 0 && (
+          <View style={{ marginTop: 16 }}>
+            <Text style={[styles.sectionTitle, { marginBottom: 12, color: theme.text }]}>👥 Recensioni Utenti</Text>
+            {userReviews.map(ur => (
+              <View key={ur.id} style={[styles.reviewCard, {
+                backgroundColor: theme.surface,
+                borderWidth: theme.isDark ? 1 : 0,
+                borderColor: theme.border,
+              }]}>
+                <View style={styles.reviewHeader}>
+                  <Text style={[styles.reviewAuthor, { color: theme.text }]}>{ur.userDisplayName || 'Utente'}</Text>
+                  <View style={[styles.reviewRating, { backgroundColor: theme.primary + '15' }]}>
+                    <Text style={styles.reviewRatingText}>{'⭐'.repeat(Math.max(0, Math.min(5, Math.round(ur.rating))))}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.reviewText, { color: theme.textSecondary }]}>{ur.text}</Text>
+                <Text style={[styles.reviewDate, { color: theme.textTertiary }]}>{new Date(ur.createdAt).toLocaleDateString('it-IT')}</Text>
+              </View>
+            ))}
           </View>
-        ))}
+        )}
       </View>
 
       {/* Informazioni aggiuntive */}
-      <View style={styles.additionalInfoContainer}>
-        <Text style={styles.sectionTitle}>ℹ️ Informazioni</Text>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Coordinate:</Text>
-          <Text style={styles.infoValue}>
+      <View style={[styles.additionalInfoContainer, {
+        backgroundColor: theme.cardBackground,
+        borderWidth: theme.isDark ? 1 : 0,
+        borderColor: theme.border,
+      }]}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>ℹ️ Informazioni</Text>
+
+        <View style={[styles.infoRow, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Coordinate:</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>
             {restaurant.latitude.toFixed(6)}, {restaurant.longitude.toFixed(6)}
           </Text>
         </View>
 
         {restaurant.phone && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Telefono:</Text>
-            <Text style={styles.infoValue}>{restaurant.phone}</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Telefono:</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>{restaurant.phone}</Text>
           </View>
         )}
 
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>ID:</Text>
-          <Text style={styles.infoValue}>{restaurant.id}</Text>
+        <View style={[styles.infoRow, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>ID:</Text>
+          <Text style={[styles.infoValue, { color: theme.text }]}>{restaurant.id}</Text>
         </View>
       </View>
 
       {/* Padding bottom per sicurezza */}
-      <View style={{ height: 50 }} />
+      <View style={{ height: 110 }} />
     </ScrollView>
   );
 }
