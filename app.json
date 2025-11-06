@@ -7,19 +7,22 @@
     "icon": "./assets/NearBiteLogo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "resturant-finder",
     "splash": {
       "image": "./assets/NearBiteLogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#FDE4B2"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nearbite.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/NearBiteLogo.png",
         "backgroundColor": "#FDE4B2"
       },
+      "package": "com.nearbite.app",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

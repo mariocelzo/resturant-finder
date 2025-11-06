@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saved Restaurants</title>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#f97306',
+              'background-light': '#f8f7f5',
+              'background-dark': '#1c1c1e', // Apple's dark mode background
+              'label-primary-light': '#000000',
+              'label-secondary-light': 'rgba(60, 60, 67, 0.6)',
+              'separator-light': 'rgba(60, 60, 67, 0.29)'
+            },
+            fontFamily: {
+              display: ['Plus Jakarta Sans']
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.75rem', // Adjusted for Apple aesthetic
+              xl: '1rem',
+              full: '9999px'
+            }
+          }
+        }
+      }
+    </script>
+<style>
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+    </style>
+</head>
+<body class="bg-background-light font-display">
+<div class="relative flex min-h-screen w-full flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-separator-light px-4 md:px-6 py-3">
+<div class="flex items-center gap-2">
+<button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-primary">
+<span class="material-symbols-outlined text-3xl">arrow_back_ios_new</span>
+</button>
+</div>
+<h1 class="text-lg font-semibold text-label-primary-light">Saved Restaurants</h1>
+<div class="flex items-center gap-4">
+<button class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-primary">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+</header>
+<main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto max-w-4xl">
+<div class="flex flex-col">
+<div class="flex items-center justify-between border-b border-separator-light py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCh_yKr4eBe1Mg0DpbDMx81HKTgIKF_x19dO5ab-2RZ6BN1OTD1PkJITqVwdd8vRE7landN-EgjbeHKn9xb672im6uW2elASqYww9AX4V-7UgLdIHcndD9Rv6gt90UV5z8BY8oQIL57tneOwTicK2q13gdqsyR0TjndAYmC7ATUo3GP93YE85AZW46ve03Qlb60rEd9lbnEhkBFmGk2MD9kMJCetO5CBFNg4S3eRPb6KtFworaCHrFFEs4ceZm9CGNugabpZiMi7nTp");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-label-primary-light">The Cozy Corner</p>
+<div class="flex items-center gap-1 text-label-secondary-light">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.5</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between border-b border-separator-light py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA8RM63qAgwQXlBI5q___h6it-jhUKX22F15SazWApdX8mg2o5TTBI47Ivef7g-JH1tG3uXYRSPfJNW8USLICp7OlUHFC9qOEC0mASpOk3QmLn6fzlreKGNH6q5CPYkRIcxI5rWRXJ5nbpvqsom4Z1fdx2tBZVI9TdIlJImbEsHfAdTwRZkNgrRChNogSIAU1IUpRmMGAwSDctjfnVpvcW2yCFCVMQ6rxdToBKF2lEHX7RlMbRmcQfewt8cxhlBFTK3XN9MJwredEgc");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-label-primary-light">Spice Route</p>
+<div class="flex items-center gap-1 text-label-secondary-light">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.2</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between border-b border-separator-light py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCpmDSaTTe07NrBx-j0gmEgsVrgzrpIvlGclwZHzWFOlcy-vDgugADAXG2j6B3Jf4bWFP_IXdt3bGYNsph6YyYU5yPEyUZJsa6rLGj_K5MF7eN7Ex1yky2rVb4vCBdDozq_1nStkaYqQ41TrfxX_aAxQHpf5zSF0tSHwGBEggHcbgztSdjPF5O2oBQgW07hJV5TFl0tVdMG_VBeoQDE7OKJTXXdORma4WAw6JsPsSsb6PwePWTQlz_MfGSq92B75zXrZD6hvEYZ8QRz");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-label-primary-light">Ocean's Catch</p>
+<div class="flex items-center gap-1 text-label-secondary-light">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.8</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between border-b border-separator-light py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA__8y3c50tlNUVNaNKUKfIxIAAKm-7wZXgB1vizR7C8lrDcr60Fmg0SAU40OATdqnepsbzSCGxX4Ni1tQO9DqepQmZzI4JWc1cKXFBhBgdVnrxVREJB2w0Rykq_AFlAjxs6JKa7DuEtLeEFGOg9f1Q_4O8yMkY6dosWYlOrqJZ_ayxBmX-UNI26GGZQNBpA3CPwv5HvpY22UujQK56tW40nndFnVTeWnxmAyfenjXFb9z_3L57vEGrVpQH6iIYtCtZzIo6vPbTSQcX");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-label-primary-light">The Green Leaf</p>
+<div class="flex items-center gap-1 text-label-secondary-light">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.0</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="flex items-center justify-between border-b border-separator-light py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBslIb7TCDZ23zCLoq25Ynk2BUz-1Rmrq1_7Opbk4V69FG6DIQIsRciAUIBZThfHwA8bdZVIg9jOrKCYMXzqIv_8Y6Ly5JcUledrmvi6OEiVTLYrlkWadrNRERErbDLgNkyUO2zKCtXvUJigB_0F1s8LKc-X8t6v-2xl9U1oqa0ixgpq_AszRIfeKF35JBdOjTAWiKrV41G3nx4hLd_6wYvadWS1h6GLl2j2TFJzgE4CEPiViyySQ_aSiiHAtBckfo8eEOXGykN490R");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-label-primary-light">Mama Rosa's</p>
+<div class="flex items-center gap-1 text-label-secondary-light">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.6</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

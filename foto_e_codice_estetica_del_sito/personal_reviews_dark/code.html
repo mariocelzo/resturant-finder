@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#f97306",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#121212",
+                        "card-dark": "#1E1E1E",
+                        "text-light": "#1f2937",
+                        "text-dark": "#e5e7eb",
+                        "text-muted-light": "#6b7280",
+                        "text-muted-dark": "#9ca3af",
+                    },
+                    fontFamily: {
+                        display: ["Plus Jakarta Sans"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "0.75rem",
+                        xl: "1rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
+<div class="relative flex min-h-screen w-full flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-white/5 px-6 sm:px-10 py-4">
+<a class="flex items-center gap-4 text-black dark:text-white" href="#">
+<span class="material-symbols-outlined text-primary text-3xl">restaurant</span>
+<h2 class="text-xl font-bold tracking-tight">Taste Explorer</h2>
+</a>
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-card-dark/50 text-white hover:bg-card-dark transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="size-10 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBDFLLTaIZBvzKQCtXcYFRFuOX5KxO6QJaeb-r02pkQf2kz135X7R60jYcislZ7mrvUR6TntOnfUJ7AKvyInSJrGOdvKcFTqzAnJPBnFNRs5ifqPrbdxXc0n_l2EjRaeqSOkKIKgg03vEr1Heolfz6EK1PG8awykYxQsX9iN0YAVjCGLLWYlgS0sc-gpZj7VzGD3wxe8Qernk1YizclkmpSc5jNAe391fWfVZXdXjJj49oaPGQvtKOA-tvNp7ed331TdgG3Va6_YJ6e");'></div>
+</div>
+</header>
+<main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto max-w-4xl">
+<div class="flex flex-col sm:flex-row items-center gap-6 mb-10">
+<div class="relative">
+<div class="size-24 rounded-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBDFLLTaIZBvzKQCtXcYFRFuOX5KxO6QJaeb-r02pkQf2kz135X7R60jYcislZ7mrvUR6TntOnfUJ7AKvyInSJrGOdvKcFTqzAnJPBnFNRs5ifqPrbdxXc0n_l2EjRaeqSOkKIKgg03vEr1Heolfz6EK1PG8awykYxQsX9iN0YAVjCGLLWYlgS0sc-gpZj7VzGD3wxe8Qernk1YizclkmpSc5jNAe391fWfVZXdXjJj49oaPGQvtKOA-tvNp7ed331TdgG3Va6_YJ6e");'></div>
+<button class="absolute bottom-0 right-0 flex items-center justify-center size-8 rounded-full bg-primary text-white">
+<span class="material-symbols-outlined text-base">edit</span>
+</button>
+</div>
+<div class="text-center sm:text-left">
+<h1 class="text-3xl font-bold text-black dark:text-white">Alex Johnson</h1>
+<p class="text-text-muted-light dark:text-text-muted-dark">alex.johnson@example.com</p>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">Member since Jan 2023</p>
+</div>
+<button class="ml-auto mt-4 sm:mt-0 px-6 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/80 transition-colors">
+                    Edit Profile
+                </button>
+</div>
+<div class="mb-8 border-b border-white/10">
+<nav aria-label="Tabs" class="flex -mb-px space-x-8">
+<a class="whitespace-nowrap border-b-2 border-primary px-1 py-4 text-sm font-medium text-primary" href="#">My Reviews</a>
+<a class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-text-muted-dark hover:border-gray-500 hover:text-white" href="#">Saved Restaurants</a>
+<a class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-text-muted-dark hover:border-gray-500 hover:text-white" href="#">Account Settings</a>
+<a class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-text-muted-dark hover:border-gray-500 hover:text-white" href="#">Logout</a>
+</nav>
+</div>
+<div>
+<h2 class="text-2xl font-bold text-black dark:text-white mb-6">My Reviews (3)</h2>
+<div class="space-y-6">
+<div class="flex gap-6 p-5 rounded-xl bg-card-dark">
+<img alt="The Cozy Corner" class="w-24 h-24 rounded-lg object-cover flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQf1MUHaYRqo9I_jBaIqYRhAIglTo0ZcscXttRHfn3mTqU23uL-ybUuFD1_sfAJ1rZVYafGtWoC-PLonSTYSxRFEpllb9Bc15HMkAcbbsFDwoM_YhagsWUsI4K-pwUVkqB21sgpk0HpYlTMhvVkDSB8z6qJB13JoZok61oTraq-LLPgvFfuVoj_rQOS9PrfdyoZ7UkuIqgUJy6B91UkfVqIatptUqz0fX1lRTX2wf7mmEHp4lMxl9As2ngCfEuv9NmNHw32HYtSK9r"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-lg font-bold text-white">The Cozy Corner</h3>
+<p class="text-sm text-text-muted-dark">Reviewed on 15 May 2024</p>
+</div>
+<div class="flex items-center gap-1 text-primary">
+<span class="font-bold text-lg">4.5</span>
+<span class="material-symbols-outlined text-xl">star</span>
+</div>
+</div>
+<p class="mt-3 text-sm text-text-dark">"Absolutely loved the atmosphere and the food was divine. The pasta carbonara was the best I've ever had. Highly recommend this place for a cozy night out."</p>
+<div class="mt-4 flex gap-4">
+<button class="text-sm font-medium text-primary hover:underline">Edit</button>
+<button class="text-sm font-medium text-red-500 hover:underline">Delete</button>
+</div>
+</div>
+</div>
+<div class="flex gap-6 p-5 rounded-xl bg-card-dark">
+<img alt="Spice Route" class="w-24 h-24 rounded-lg object-cover flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANB6C9haiPZS73_SmUzhMRnKhP_MoRlmTkBa2wXqbAd-yGA7cwrVRFbkrOoNEiRDlwjgWk9wb121h94835b2Ydvjbj39m0p7-4AiLa__EkkV3zQqxiSvAJT_03a0NJk70Q26TGq7z0Dgd75vsj5Pf96nFjBMcuOoQDCy2IBP2OS0IkkM5HtqgAi9LHg7eu5QMYL8r0isrhsjm5Qg63WYxlhRXWPzIlj6I5h24DV5rRniCZZH5xqUiSzUuCD91wrbaXzEXuRhRt5Ks9"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-lg font-bold text-white">Spice Route</h3>
+<p class="text-sm text-text-muted-dark">Reviewed on 28 Apr 2024</p>
+</div>
+<div class="flex items-center gap-1 text-primary">
+<span class="font-bold text-lg">4.2</span>
+<span class="material-symbols-outlined text-xl">star</span>
+</div>
+</div>
+<p class="mt-3 text-sm text-text-dark">"Great Indian food with authentic flavors. The butter chicken was rich and creamy. Service was a bit slow, but the food made up for it."</p>
+<div class="mt-4 flex gap-4">
+<button class="text-sm font-medium text-primary hover:underline">Edit</button>
+<button class="text-sm font-medium text-red-500 hover:underline">Delete</button>
+</div>
+</div>
+</div>
+<div class="flex gap-6 p-5 rounded-xl bg-card-dark">
+<img alt="The Green Leaf" class="w-24 h-24 rounded-lg object-cover flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDimlE8suz7kkIJpDsHlBh9AdBm2QYcnTv73fwelxFoBxs3FFoTmZzgIOWPhY6h7FXsxxqOfXYs71wL9bukx8FLEGkxV-ewqytZXvwht6ZRf4kEmLTXlUb8Dg9hX7FBa9MrGau-LgRWrarZx_EAUBoK3HwBNaZ7k4-MsThMgSB4O6f7bAf2Y5M58gTjoxX-SlB4pVSf17Lw1wJHDbO2m7pVSa5QgTjSvF9C4Wf51UI3gdsr11nVNVrH9Zf1yZvlLLafF1P1g0VFtsCy"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-lg font-bold text-white">The Green Leaf</h3>
+<p class="text-sm text-text-muted-dark">Reviewed on 05 Mar 2024</p>
+</div>
+<div class="flex items-center gap-1 text-primary">
+<span class="font-bold text-lg">4.8</span>
+<span class="material-symbols-outlined text-xl">star</span>
+</div>
+</div>
+<p class="mt-3 text-sm text-text-dark">"A heaven for vegans! The salads are fresh and the smoothies are delicious. The 'Avocado Power' bowl is a must-try. Will definitely be back."</p>
+<div class="mt-4 flex gap-4">
+<button class="text-sm font-medium text-primary hover:underline">Edit</button>
+<button class="text-sm font-medium text-red-500 hover:underline">Delete</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

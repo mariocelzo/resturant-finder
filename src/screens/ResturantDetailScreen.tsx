@@ -9,17 +9,20 @@ import {
   Alert,
   Image,
   Dimensions,
-  Platform
+  Platform,
+  Share
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Restaurant } from '../services/googlePlaces';
 import { fetchPlaceReviews, PlaceReview } from '../services/googlePlaces';
 import { ReviewsService, UserReview } from '../services/reviewsService';
+import { RecommendationService, InteractionType } from '../services/recommendationService';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../App';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
@@ -28,11 +31,29 @@ export default function RestaurantDetailScreen() {
   const { restaurant } = route.params;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   const [reviews, setReviews] = useState<PlaceReview[] | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [userReviews, setUserReviews] = useState<UserReview[] | null>(null);
+
+  // Track view interaction quando si apre la schermata
+  useEffect(() => {
+    if (user?.id) {
+      RecommendationService.trackInteraction(
+        user.id,
+        restaurant.id,
+        restaurant.name,
+        InteractionType.VIEW,
+        {
+          cuisineType: restaurant.cuisine_type,
+          priceLevel: restaurant.priceLevel,
+          isGuest: user.isGuest,
+        }
+      );
+    }
+  }, [user?.id, restaurant.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -77,21 +98,52 @@ export default function RestaurantDetailScreen() {
       .catch(() => Linking.openURL(fallbackUrl));
   };
 
-  const handleShare = () => {
-    const shareText = `Dai un'occhiata a ${restaurant.name}!\n${restaurant.address}\nRating: ${restaurant.rating}/5`;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: restaurant.name,
-        text: shareText,
-      });
-    } else {
-      Alert.alert('Condividi', shareText);
+  const handleShare = async () => {
+    try {
+      const shareMessage = `Dai un'occhiata a ${restaurant.name}!\n\n` +
+        `📍 ${restaurant.address}\n` +
+        `⭐ Rating: ${restaurant.rating}/5\n` +
+        `${restaurant.cuisine_type ? `🍽️ ${restaurant.cuisine_type}\n` : ''}` +
+        `\nVisualizza su Google Maps:\n` +
+        `https://maps.google.com/?q=${restaurant.latitude},${restaurant.longitude}`;
+
+      const result = await Share.share(
+        {
+          message: shareMessage,
+          title: `Scopri ${restaurant.name}`,
+          url: `https://maps.google.com/?q=${restaurant.latitude},${restaurant.longitude}`, // iOS only
+        },
+        {
+          dialogTitle: `Condividi ${restaurant.name}`, // Android only
+          subject: `Scopri ${restaurant.name}`, // Email subject (iOS only)
+        }
+      );
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with specific activity (iOS)
+          console.log(`Shared via ${result.activityType}`);
+        } else {
+          // Shared successfully
+          console.log('Content shared successfully');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Share dialog was dismissed
+        console.log('Share dialog dismissed');
+      }
+    } catch (error: any) {
+      Alert.alert('Errore', 'Impossibile condividere il ristorante');
+      console.error('Share error:', error);
     }
   };
 
   const handleAddReview = () => {
-    navigation.navigate('AddReview', { placeId: restaurant.id, restaurantName: restaurant.name });
+    navigation.navigate('AddReview', {
+      placeId: restaurant.id,
+      restaurantName: restaurant.name,
+      cuisineType: restaurant.cuisine_type,
+      priceLevel: restaurant.priceLevel,
+    });
   };
 
   const getPriceLevelText = (level?: number) => {

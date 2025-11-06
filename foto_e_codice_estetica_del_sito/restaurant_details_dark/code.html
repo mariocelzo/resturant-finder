@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+        :root {
+          --primary-color: #f97306;
+          --background-light: #f5f5f7;
+          --background-dark: #000000;
+          --text-light-primary: #1d1d1f;
+          --text-light-secondary: #6e6e73;
+          --text-dark-primary: #f5f5f7;
+          --text-dark-secondary: #a1a1a6;
+          --separator-light: #d2d2d7;
+          --separator-dark: #3a3a3c;
+          --card-bg-light: #ffffff;
+          --card-bg-dark: #1c1c1e;
+        }
+        body {
+            font-family: 'SF Pro Display', sans-serif;
+        }
+    </style>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "var(--primary-color)",
+              "background-light": "var(--background-light)",
+              "background-dark": "var(--background-dark)",
+              "text-light-primary": "var(--text-light-primary)",
+              "text-light-secondary": "var(--text-light-secondary)",
+              "text-dark-primary": "var(--text-dark-primary)",
+              "text-dark-secondary": "var(--text-dark-secondary)",
+              "separator-light": "var(--separator-light)",
+              "separator-dark": "var(--separator-dark)",
+              "card-bg-light": "var(--card-bg-light)",
+              "card-bg-dark": "var(--card-bg-dark)",
+            },
+            fontFamily: {
+              display: ["SF Pro Display", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light-primary dark:text-text-dark-primary">
+<div class="flex flex-col min-h-screen">
+<header class="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-xl border-b border-separator-light dark:border-separator-dark">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1 text-primary">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="font-semibold">Back</span>
+</button>
+</div>
+<h1 class="text-lg font-semibold text-text-light-primary dark:text-text-dark-primary">The Cozy Corner Bistro</h1>
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-800 text-text-light-secondary dark:text-text-dark-secondary hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" fill-rule="evenodd"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow">
+<div class="relative w-full h-80">
+<div class="absolute inset-0 w-full h-full bg-center bg-no-repeat bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCLz-SdBRjaeyIOMv3ptfxx5JXc2ibaeOfhKzGHHHVHRZIwrrWpR4R7xvOGUKJ1QH8HwJ7_eKbZo6X-eDOK3XfqfWFJ0ffwh1aTdcaXWnjDFErFZL-2Qv9JhvBj6ollA-HaX7frEVAqr4m9urvd4elVliAH3G-QVZruMHWnjFcNnr8uiSJLGiPNAgmqdjI9SUmeXBJXahldQvSO19gs5YuACMCT1p3H-JWk3Ka3n8eHMEuMYsARbVgeRRCtHe0znW0e-MxbB33CgjxZ");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light/50 dark:via-background-dark/50 to-transparent"></div>
+</div>
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 -mt-24">
+<div class="max-w-4xl mx-auto">
+<div class="relative z-10 text-center pb-8">
+<h1 class="text-5xl font-bold text-text-light-primary dark:text-text-dark-primary tracking-tight">The Cozy Corner Bistro</h1>
+<p class="mt-3 text-lg text-text-light-secondary dark:text-text-dark-secondary">A charming bistro offering a delightful fusion of classic and contemporary dishes.</p>
+</div>
+<div class="bg-card-bg-light dark:bg-card-bg-dark rounded-xl shadow-md overflow-hidden">
+<div class="p-6 md:p-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 flex-shrink-0 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-text-light-primary dark:text-text-dark-primary">Address</h3>
+<p class="text-text-light-secondary dark:text-text-dark-secondary text-sm">123 Oak Street, Anytown, USA</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 flex-shrink-0 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-text-light-primary dark:text-text-dark-primary">Phone</h3>
+<p class="text-text-light-secondary dark:text-text-dark-secondary text-sm">(555) 123-4567</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 flex-shrink-0 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+<svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-text-light-primary dark:text-text-dark-primary">Hours</h3>
+<p class="text-text-light-secondary dark:text-text-dark-secondary text-sm">Open until 10 PM</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-12">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-3xl font-bold text-text-light-primary dark:text-text-dark-primary tracking-tight">Reviews</h2>
+<button class="bg-primary text-white font-semibold py-2 px-5 rounded-lg hover:bg-primary/90 transition-colors text-sm">
+                            Write a Review
+                        </button>
+</div>
+<div class="space-y-4">
+<div class="bg-card-bg-light dark:bg-card-bg-dark rounded-xl p-6">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 bg-center bg-no-repeat bg-cover rounded-full flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC0AYKrfMOQTqQb4UjJMawkTCpydL_Hxm-tgTEesIGt91_ihJT2xYTIoguIkAqB-ua5cNCJ9wdAtZ7sEbxfhbZFETa_UqU5i4ESRPqY7Y9ZN0Crb5kBIrOlcByZX9UF0sUX_-7aGdUQRLUT9uMaDcE4VdMAu3f_3o4nrBzpBDcynoC6-m-j8g8p6V86GL2xft7J__FfQCFjUPBtgOJrsouWzkPOvt6lk-a2D9aEawEKMlTBFeafVljnL0mKRaisCcJ658UNEnDkTr46");'></div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-semibold text-text-light-primary dark:text-text-dark-primary">Sophia Clark</p>
+<p class="text-sm text-text-light-secondary dark:text-text-dark-secondary">1 month ago</p>
+</div>
+<div class="flex items-center text-primary">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+<span class="ml-1 font-bold text-sm">5</span>
+</div>
+</div>
+<p class="mt-3 text-text-light-secondary dark:text-text-dark-secondary">The Cozy Corner Bistro exceeded my expectations! The food was delicious, the service was impeccable, and the ambiance was perfect for a romantic dinner. Highly recommend!</p>
+</div>
+</div>
+</div>
+<div class="bg-card-bg-light dark:bg-card-bg-dark rounded-xl p-6">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 bg-center bg-no-repeat bg-cover rounded-full flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCrlDafJ5LeG738WPIpbPAxUCorcxqTlZbm-s-Mfn-FKjcHLVsQodE9IC6el25oTkZl6Rks7zp39xU3lABgufnraLpQUIZ4TQuschAUbm80fJiE1TyR4aFQAwZpnXpuo7XqqNHf3-0_tOtqcPU0nRB506qluAlbxi2XbJssLMoCbd3xKhZO7VYsyxhPWgqTwZlqgQmZBGIfu1mEVxjvj9kX4LzwmB8Iun5u2UncdhnsWEfozB5FUMzgEKlfz-uX6a2RFUXuyaWyfXBO");'></div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-semibold text-text-light-primary dark:text-text-dark-primary">Ethan Bennett</p>
+<p class="text-sm text-text-light-secondary dark:text-text-dark-secondary">2 months ago</p>
+</div>
+<div class="flex items-center text-primary">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+<span class="ml-1 font-bold text-sm">4</span>
+</div>
+</div>
+<p class="mt-3 text-text-light-secondary dark:text-text-dark-secondary">I had a great experience at The Cozy Corner Bistro. The menu had a good variety of options, and the food was well-prepared. The staff was friendly and attentive. Will definitely return.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="h-24"></div>
+</main>
+</div>
+
+</body></html>

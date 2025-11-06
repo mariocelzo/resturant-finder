@@ -34,16 +34,20 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
+        console.log('📍 LocationContext: Caricamento posizione di default...');
         const def = await UserProfileService.getDefaultSearchLocation();
         if (def) {
+          console.log('✅ LocationContext: Posizione di default trovata:', def.name, def.address);
           setManualLocation(def.address, {
             latitude: def.latitude,
             longitude: def.longitude,
             formattedAddress: def.address,
           });
+        } else {
+          console.log('⚠️ LocationContext: Nessuna posizione di default salvata');
         }
       } catch (e) {
-        // noop
+        console.warn('⚠️ LocationContext: Errore caricamento posizione default:', e);
       }
     })();
   }, []);

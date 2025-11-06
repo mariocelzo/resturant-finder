@@ -10,6 +10,7 @@ import {
   Switch,
   RefreshControl,
   Platform,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -36,7 +37,7 @@ export default function UserProfileScreen() {
   const { setManualLocation } = useLocationSelection();
   const { theme, setThemeMode, themeMode } = useTheme();
 
-  // Ricarica quando la schermata ottiene focus
+  // Ricarica quando la schermata ottiene focus (ma non al primo mount)
   useFocusEffect(
     useCallback(() => {
       console.log('👤 UserProfileScreen got focus, loading profile...');
@@ -44,13 +45,15 @@ export default function UserProfileScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    console.log('🚀 UserProfileScreen mounted');
-    loadProfile();
-  }, []);
-
   const loadProfile = async (showRefreshLoader = false) => {
     try {
+      // Evita doppio caricamento se già caricato
+      if (!showRefreshLoader && profile && userLocations.length > 0) {
+        console.log('👤 Profilo già caricato, skip');
+        setLoading(false);
+        return;
+      }
+
       console.log('👤 Caricando profilo utente...');
       if (showRefreshLoader) setRefreshing(true);
       else setLoading(true);
@@ -68,7 +71,8 @@ export default function UserProfileScreen() {
       });
     } catch (error) {
       console.error('❌ Errore caricamento profilo:', error);
-      Alert.alert('Errore', 'Impossibile caricare il profilo');
+      // Non mostrare alert a ogni caricamento fallito, solo logga
+      console.warn('Profilo non caricabile, utente potrebbe essere guest');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -190,7 +194,12 @@ export default function UserProfileScreen() {
                 Alert.alert('Permesso negato', 'Consenti l\'accesso alle foto per caricare un avatar.');
                 return;
               }
-              const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+                allowsEditing: true,
+                aspect: [1, 1],
+              });
               if (result.canceled || !result.assets?.length) return;
               const asset = result.assets[0];
               const resp = await fetch(asset.uri);
@@ -213,10 +222,11 @@ export default function UserProfileScreen() {
         >
           <View style={styles.avatar}>
             {profile?.avatar_url ? (
-              <View style={{ width: 80, height: 80, borderRadius: 40, overflow: 'hidden' }}>
-                {/* Use Image without importing new to keep consistency */}
-                {React.createElement(require('react-native').Image, { source: { uri: profile.avatar_url }, style: { width: '100%', height: '100%' } })}
-              </View>
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={{ width: 80, height: 80, borderRadius: 40 }}
+                resizeMode="cover"
+              />
             ) : (
               <Text style={styles.avatarText}>
                 {profile?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '👤'}

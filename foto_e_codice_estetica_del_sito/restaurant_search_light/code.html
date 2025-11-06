@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Restaurant Search</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        :root {
+            --background-light-gradient: linear-gradient(to bottom, #f0f2f5, #e5e7eb);
+        }
+        .material-symbols-outlined.filled {
+          font-variation-settings:
+          'FILL' 1,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24
+        }
+    </style>
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f97306",
+                        "background-light": "#f0f2f5",
+                        "background-dark": "#23180f",
+                        "surface": "#ffffff",
+                        "primary-text": "#1c1c1e",
+                        "secondary-text": "#636366",
+                        "tertiary-text": "#c7c7cc",
+                        "divider": "#e5e5ea"
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'subtle': '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
+                        'subtle-md': '0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-[var(--background-light-gradient)] font-display">
+<div class="relative flex min-h-screen w-full flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-divider bg-surface/80 backdrop-blur-sm px-4 sm:px-6 py-3 sticky top-0 z-50">
+<button class="flex items-center gap-2 text-primary-text">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+<span class="font-medium">Back</span>
+</button>
+<h1 class="text-lg font-semibold text-primary-text">Search</h1>
+<div class="w-16"></div>
+</header>
+<main class="flex flex-1 flex-col py-6 px-4 sm:px-6">
+<div class="w-full max-w-7xl mx-auto">
+<div class="mb-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary-text text-2xl">search</span>
+<input class="w-full h-12 pl-12 pr-4 rounded-xl bg-surface text-primary-text placeholder:text-secondary-text border border-divider focus:ring-2 focus:ring-primary focus:border-primary shadow-subtle" placeholder="Sushi restaurant in New York" type="text" value="Sushi"/>
+</div>
+</div>
+<div class="mb-6">
+<div class="flex space-x-2 overflow-x-auto pb-2 -mx-4 px-4">
+<button class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors bg-primary text-white shadow-sm">All</button>
+<button class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors bg-surface text-secondary-text border border-divider hover:bg-gray-100">Open Now</button>
+<button class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors bg-surface text-secondary-text border border-divider hover:bg-gray-100">Top Rated</button>
+<button class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors bg-surface text-secondary-text border border-divider hover:bg-gray-100">Cafes</button>
+<button class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors bg-surface text-secondary-text border border-divider hover:bg-gray-100">Bars</button>
+<button class="px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap transition-colors bg-surface text-secondary-text border border-divider hover:bg-gray-100">Italian</button>
+</div>
+</div>
+<div class="space-y-4">
+<div class="group flex items-start gap-4 bg-surface p-3 rounded-xl border border-divider hover:shadow-subtle-md hover:border-transparent transition-all cursor-pointer">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDl7h_szLhnkeuzMkkBSLeq4MgInzVDZ7YOjGcX-CmX3XM5p9oBQL6m8xv78azoER1IyZ3tz5C6rsuGkAx0w_8VHlVNYKn4--40WB5RUCxPCQ6iQB-qPUhEhZWczCYrg5pQ9q3JLtHWDrwnTwBIJ6eBWx5U3aVoTSG49BfV6LgbjTUnmfPOKKsu-wYkw4MZ4ySDHj_ZC2hFqLNkhEHDb3EHFXibPX70-3ic5da2s8_URSxE09FP3fHmVVeI-dbh61nULjotdBl9l9qw");'></div>
+<div class="flex-1">
+<h3 class="text-base font-bold text-primary-text group-hover:text-primary transition-colors">Ocean's Catch</h3>
+<p class="text-sm text-secondary-text">Seafood, Grill</p>
+<div class="flex items-center gap-1.5 mt-1 text-sm text-secondary-text">
+<div class="flex items-center gap-0.5 text-primary-text">
+<span class="material-symbols-outlined text-primary text-base leading-none filled">star</span>
+<span class="font-medium">4.0</span>
+</div>
+<span class="text-tertiary-text">·</span>
+<span>0.5 mi</span>
+</div>
+</div>
+<button class="p-2 text-tertiary-text hover:text-primary transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="group flex items-start gap-4 bg-surface p-3 rounded-xl border border-transparent ring-2 ring-primary/30 shadow-subtle-md transition-all cursor-pointer">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAeBNDNV_p2G1yG_nK_HVtbmvFjNbThR-3sAGoyGE9Q6agjYCUwLTSGOcDimI5-t3cxuDdD2Y6CfH_I3VxHy5jn1xDrGxo8g2B7Sd--vA2zmHv0cNNdsChsow5borB5afPL1xMEZMkyMcpTz_-KmJJbbHhsBQaZivtxAbOdPv1xymSHCoMvU_YFwfXm9ZiD5Brd1AFgGGm3NGNtM-Qi41idhdlvZTM2TBP_XOqGxqp3yk3cFGATlmG-Lc4JL1_-YwXrLX1OrhFuykKx");'></div>
+<div class="flex-1">
+<h3 class="text-base font-bold text-primary transition-colors">Sushi Samba</h3>
+<p class="text-sm text-secondary-text">Japanese, Sushi</p>
+<div class="flex items-center gap-1.5 mt-1 text-sm text-secondary-text">
+<div class="flex items-center gap-0.5 text-primary-text">
+<span class="material-symbols-outlined text-primary text-base leading-none filled">star</span>
+<span class="font-medium">4.7</span>
+</div>
+<span class="text-tertiary-text">·</span>
+<span>1.2 mi</span>
+</div>
+</div>
+<button class="p-2 text-primary transition-colors">
+<span class="material-symbols-outlined filled">favorite</span>
+</button>
+</div>
+<div class="group flex items-start gap-4 bg-surface p-3 rounded-xl border border-divider hover:shadow-subtle-md hover:border-transparent transition-all cursor-pointer">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDEEu0-uMKY06maGJoa3UoAQmVAduiM1RTD6sWHYHEBf5BZ5OggXoIzABOJN_lCaRmDpTT1JarKyCxRnckv-DxMLZyMkQio8UADNeKon4AtClK65lss-wZPgnnwFtdzZmN5rkwSyG51g0uLvKWKaitCXV3LwUOgMta2q8quj3StLrHwJAXaOiCv0_XTA0ekBxCUXmo2m6yfFQttFrZEzfsnG4DjsEhaN1XyZLZSV3bvB1-Pv-v6wffe-iVGz8gHCRB2DQwJSNc_eInd");'></div>
+<div class="flex-1">
+<h3 class="text-base font-bold text-primary-text group-hover:text-primary transition-colors">The Ramen Shop</h3>
+<p class="text-sm text-secondary-text">Japanese, Ramen</p>
+<div class="flex items-center gap-1.5 mt-1 text-sm text-secondary-text">
+<div class="flex items-center gap-0.5 text-primary-text">
+<span class="material-symbols-outlined text-primary text-base leading-none filled">star</span>
+<span class="font-medium">4.9</span>
+</div>
+<span class="text-tertiary-text">·</span>
+<span>1.8 mi</span>
+</div>
+</div>
+<button class="p-2 text-tertiary-text hover:text-primary transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="group flex items-start gap-4 bg-surface p-3 rounded-xl border border-divider hover:shadow-subtle-md hover:border-transparent transition-all cursor-pointer">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuANB6C9haiPZS73_SmUzhMRnKhP_MoRlmTkBa2wXqbAd-yGA7cwrVRFbkrOoNEiRDlwjgWk9wb121h94835b2Ydvjbj39m0p7-4AiLa__EkkV3zQqxiSvAJT_03a0NJk70Q26TGq7z0Dgd75vsj5Pf96nFjBMcuOoQDCy2IBP2OS0IkkM5HtqgAi9LHg7eu5QMYL8r0isrhsjm5Qg63WYxlhRXWPzIlj6I5h24DV5rRniCZZH5xqUiSzUuCD91wrbaXzEXuRhRt5Ks9");'></div>
+<div class="flex-1">
+<h3 class="text-base font-bold text-primary-text group-hover:text-primary transition-colors">Spice Route</h3>
+<p class="text-sm text-secondary-text">Indian, Curry</p>
+<div class="flex items-center gap-1.5 mt-1 text-sm text-secondary-text">
+<div class="flex items-center gap-0.5 text-primary-text">
+<span class="material-symbols-outlined text-primary text-base leading-none filled">star</span>
+<span class="font-medium">4.2</span>
+</div>
+<span class="text-tertiary-text">·</span>
+<span>2.1 mi</span>
+</div>
+</div>
+<button class="p-2 text-tertiary-text hover:text-primary transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="group flex items-start gap-4 bg-surface p-3 rounded-xl border border-divider hover:shadow-subtle-md hover:border-transparent transition-all cursor-pointer">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBQf1MUHaYRqo9I_jBaIqYRhAIglTo0ZcscXttRHfn3mTqU23uL-ybUuFD1_sfAJ1rZVYafGtWoC-PLonSTYSxRFEpllb9Bc15HMkAcbbsFDwoM_YhagsWUsI4K-pwUVkqB21sgpk0HpYlTMhvVkDSB8z6qJB13JoZok61oTraq-LLPgvFfuVoj_rQOS9PrfdyoZ7UkuIqgUJy6B91UkfVqIatptUqz0fX1lRTX2wf7mmEHp4lMxl9As2ngCfEuv9NmNHw32HYtSK9r");'></div>
+<div class="flex-1">
+<h3 class="text-base font-bold text-primary-text group-hover:text-primary transition-colors">The Cozy Corner</h3>
+<p class="text-sm text-secondary-text">Italian, Pasta</p>
+<div class="flex items-center gap-1.5 mt-1 text-sm text-secondary-text">
+<div class="flex items-center gap-0.5 text-primary-text">
+<span class="material-symbols-outlined text-primary text-base leading-none filled">star</span>
+<span class="font-medium">4.5</span>
+</div>
+<span class="text-tertiary-text">·</span>
+<span>2.5 mi</span>
+</div>
+</div>
+<button class="p-2 text-tertiary-text hover:text-primary transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

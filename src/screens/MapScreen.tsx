@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, Text, ActivityIndicator, Modal, TextInput, TouchableOpacity } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import MapView, { Marker, Region } from '../components/MapView';
 import * as Location from 'expo-location';
 import { searchNearbyRestaurants, Restaurant, geocodeLocation, placesAutocomplete, getPlaceDetails } from '../services/googlePlaces';
 import { Ionicons } from '@expo/vector-icons';

@@ -9,6 +9,8 @@ import { Restaurant, searchNearbyRestaurants } from '../services/googlePlaces';
 import { useLocationSelection } from '../contexts/LocationContext';
 import { geocodeLocation } from '../services/googlePlaces';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { RecommendationService } from '../services/recommendationService';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -17,10 +19,12 @@ const NAPLES = { LAT: 40.8522, LNG: 14.2681 };
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const { coordinates: selectedCoords, locationQuery, setManualLocation } = useLocationSelection();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [recommendedRestaurants, setRecommendedRestaurants] = useState<Restaurant[]>([]);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -49,6 +53,20 @@ export default function HomeScreen() {
       }
       const data = await searchNearbyRestaurants(lat, lng, 4000, 60);
       setRestaurants(data);
+
+      // Applica il sistema di raccomandazioni personalizzate
+      if (user?.id && data.length > 0) {
+        const sorted = await RecommendationService.sortByRecommendation(
+          user.id,
+          data,
+          user.isGuest,
+          0.7 // 70% personalizzazione, 30% qualità generale
+        );
+        setRecommendedRestaurants(sorted);
+      } else {
+        // Se non c'è utente, usa solo il rating
+        setRecommendedRestaurants(data);
+      }
     } catch (e) {
       console.error('❌ Home load error', e);
     } finally {
@@ -133,7 +151,7 @@ export default function HomeScreen() {
   return (
     <>
       <FlatList
-        data={topByRating}
+        data={recommendedRestaurants.length > 0 ? recommendedRestaurants : topByRating}
         keyExtractor={(r) => r.id}
         renderItem={renderRestaurant}
         contentContainerStyle={[styles.list, { paddingBottom: 110 }]}
@@ -170,10 +188,16 @@ export default function HomeScreen() {
               style={[styles.hero, { backgroundColor: theme.cardBackground }]}
             >
               <Text style={[styles.title, { color: theme.text }]}>
-                🔥 Migliori ristoranti{cityLabel ? ` vicino ${cityLabel}` : ''}
+                {recommendedRestaurants.length > 0 && user
+                  ? `✨ Consigliati per te${cityLabel ? ` vicino ${cityLabel}` : ''}`
+                  : `🔥 Migliori ristoranti${cityLabel ? ` vicino ${cityLabel}` : ''}`
+                }
               </Text>
               <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                I locali con il rating più alto
+                {recommendedRestaurants.length > 0 && user
+                  ? 'In base alle tue preferenze e interazioni'
+                  : 'I locali con il rating più alto'
+                }
               </Text>
             </LinearGradient>
 

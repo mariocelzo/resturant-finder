@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saved Restaurants</title>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#f97306',
+              'background-light': '#f8f7f5',
+              'background-dark': '#23180f'
+            },
+            fontFamily: {
+              display: ['Plus Jakarta Sans']
+            },
+            borderRadius: {
+              DEFAULT: '0.25rem',
+              lg: '0.5rem',
+              xl: '0.75rem',
+              full: '9999px'
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-primary/20 dark:border-primary/30 px-6 md:px-10 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 text-primary">
+<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M44 11.2727C44 14.0109 39.8386 16.3957 33.69 17.6364C39.8386 18.877 44 21.2618 44 24C44 26.7382 39.8386 29.123 33.69 30.3636C39.8386 31.6043 44 33.9891 44 36.7273C44 40.7439 35.0457 44 24 44C12.9543 44 4 40.7439 4 36.7273C4 33.9891 8.16144 31.6043 14.31 30.3636C8.16144 29.123 4 26.7382 4 24C4 21.2618 8.16144 18.877 14.31 17.6364C8.16144 16.3957 4 14.0109 4 11.2727C4 7.25611 12.9543 4 24 4C35.0457 4 44 7.25611 44 11.2727Z" fill="currentColor"></path>
+</svg>
+</div>
+<h1 class="text-xl font-bold text-background-dark dark:text-background-light">TasteTrail</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex relative items-center">
+<span class="material-symbols-outlined absolute left-3 text-background-dark/50 dark:text-background-light/50"> search </span>
+<input class="form-input w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg bg-background-light/50 dark:bg-background-dark/50 text-background-dark dark:text-background-light focus:outline-0 focus:ring-2 focus:ring-primary border-none py-2 pl-10 pr-4 text-base font-normal" placeholder="Search" value=""/>
+</div>
+<button class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30">
+<span class="material-symbols-outlined"> favorite </span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAkaYS5JVc4W7AvEFA1pj5oxVfifIUsNyOEgEVQnAl7MsT2B7Y-mC-HKWcN3KK_K6ebScLDXe_DAdK5IgB1BJPjFrbMIjLUOs9eJlf7h99EPeNiYFcSnObkzpIjph3U1mnzVsMGUUmoEbJEfdbECV55Ua0bE38BA1Bk-tKjxsea2ymfuKKxB8sEyONKNRPWr6mD0zbY6k1jkW7UutlGEV2nVp1gNLHSVSxmVxnOaglyHL5jmegeBqF23OpLdv8v6RbV54F9xplQU4WQ");'></div>
+</div>
+</header>
+<main class="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+<div class="mx-auto max-w-4xl">
+<div class="mb-8">
+<h2 class="text-3xl font-bold tracking-tight text-background-dark dark:text-background-light">Saved Restaurants</h2>
+</div>
+<div class="flex flex-col space-y-4">
+<div class="flex items-center justify-between rounded-lg bg-background-light/50 dark:bg-background-dark/50 p-4 transition-all hover:bg-primary/10 dark:hover:bg-primary/20">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCh_yKr4eBe1Mg0DpbDMx81HKTgIKF_x19dO5ab-2RZ6BN1OTD1PkJITqVwdd8vRE7landN-EgjbeHKn9xb672im6uW2elASqYww9AX4V-7UgLdIHcndD9Rv6gt90UV5z8BY8oQIL57tneOwTicK2q13gdqsyR0TjndAYmC7ATUo3GP93YE85AZW46ve03Qlb60rEd9lbnEhkBFmGk2MD9kMJCetO5CBFNg4S3eRPb6KtFworaCHrFFEs4ceZm9CGNugabpZiMi7nTp");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-background-dark dark:text-background-light">The Cozy Corner</p>
+<div class="flex items-center gap-1 text-background-dark/70 dark:text-background-light/70">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.5</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10 dark:hover:bg-primary/20">
+<span class="material-symbols-outlined"> favorite </span>
+</button>
+</div>
+<div class="flex items-center justify-between rounded-lg bg-background-light/50 dark:bg-background-dark/50 p-4 transition-all hover:bg-primary/10 dark:hover:bg-primary/20">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA8RM63qAgwQXlBI5q___h6it-jhUKX22F15SazWApdX8mg2o5TTBI47Ivef7g-JH1tG3uXYRSPfJNW8USLICp7OlUHFC9qOEC0mASpOk3QmLn6fzlreKGNH6q5CPYkRIcxI5rWRXJ5nbpvqsom4Z1fdx2tBZVI9TdIlJImbEsHfAdTwRZkNgrRChNogSIAU1IUpRmMGAwSDctjfnVpvcW2yCFCVMQ6rxdToBKF2lEHX7RlMbRmcQfewt8cxhlBFTK3XN9MJwredEgc");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-background-dark dark:text-background-light">Spice Route</p>
+<div class="flex items-center gap-1 text-background-dark/70 dark:text-background-light/70">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.2</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10 dark:hover:bg-primary/20">
+<span class="material-symbols-outlined"> favorite </span>
+</button>
+</div>
+<div class="flex items-center justify-between rounded-lg bg-background-light/50 dark:bg-background-dark/50 p-4 transition-all hover:bg-primary/10 dark:hover:bg-primary/20">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCpmDSaTTe07NrBx-j0gmEgsVrgzrpIvlGclwZHzWFOlcy-vDgugADAXG2j6B3Jf4bWFP_IXdt3bGYNsph6YyYU5yPEyUZJsa6rLGj_K5MF7eN7Ex1yky2rVb4vCBdDozq_1nStkaYqQ41TrfxX_aAxQHpf5zSF0tSHwGBEggHcbgztSdjPF5O2oBQgW07hJV5TFl0tVdMG_VBeoQDE7OKJTXXdORma4WAw6JsPsSsb6PwePWTQlz_MfGSq92B75zXrZD6hvEYZ8QRz");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-background-dark dark:text-background-light">Ocean's Catch</p>
+<div class="flex items-center gap-1 text-background-dark/70 dark:text-background-light/70">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.8</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10 dark:hover:bg-primary/20">
+<span class="material-symbols-outlined"> favorite </span>
+</button>
+</div>
+<div class="flex items-center justify-between rounded-lg bg-background-light/50 dark:bg-background-dark/50 p-4 transition-all hover:bg-primary/10 dark:hover:bg-primary/20">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA__8y3c50tlNUVNaNKUKfIxIAAKm-7wZXgB1vizR7C8lrDcr60Fmg0SAU40OATdqnepsbzSCGxX4Ni1tQO9DqepQmZzI4JWc1cKXFBhBgdVnrxVREJB2w0Rykq_AFlAjxs6JKa7DuEtLeEFGOg9f1Q_4O8yMkY6dosWYlOrqJZ_ayxBmX-UNI26GGZQNBpA3CPwv5HvpY22UujQK56tW40nndFnVTeWnxmAyfenjXFb9z_3L57vEGrVpQH6iIYtCtZzIo6vPbTSQcX");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-background-dark dark:text-background-light">The Green Leaf</p>
+<div class="flex items-center gap-1 text-background-dark/70 dark:text-background-light/70">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.0</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10 dark:hover:bg-primary/20">
+<span class="material-symbols-outlined"> favorite </span>
+</button>
+</div>
+<div class="flex items-center justify-between rounded-lg bg-background-light/50 dark:bg-background-dark/50 p-4 transition-all hover:bg-primary/10 dark:hover:bg-primary/20">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBslIb7TCDZ23zCLoq25Ynk2BUz-1Rmrq1_7Opbk4V69FG6DIQIsRciAUIBZThfHwA8bdZVIg9jOrKCYMXzqIv_8Y6Ly5JcUledrmvi6OEiVTLYrlkWadrNRERErbDLgNkyUO2zKCtXvUJigB_0F1s8LKc-X8t6v-2xl9U1oqa0ixgpq_AszRIfeKF35JBdOjTAWiKrV41G3nx4hLd_6wYvadWS1h6GLl2j2TFJzgE4CEPiViyySQ_aSiiHAtBckfo8eEOXGykN490R");'></div>
+<div class="flex flex-col">
+<p class="text-lg font-semibold text-background-dark dark:text-background-light">Mama Rosa's</p>
+<div class="flex items-center gap-1 text-background-dark/70 dark:text-background-light/70">
+<span class="material-symbols-outlined text-sm text-primary">star</span>
+<p class="text-sm font-medium">4.6</p>
+</div>
+</div>
+</div>
+<button class="flex size-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10 dark:hover:bg-primary/20">
+<span class="material-symbols-outlined"> favorite </span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

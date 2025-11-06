@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#f97306",
+              "background-light": "#f8f7f5",
+              "background-dark": "#121212",
+              "card-dark": "#1C1C1C",
+            },
+            fontFamily: {
+              display: ["Plus Jakarta Sans"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="flex flex-col min-h-screen">
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-4">
+<a class="flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-gray-500 dark:text-gray-400">arrow_back_ios_new</span>
+</a>
+<h1 class="text-xl font-bold text-gray-900 dark:text-white">My Profile</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-4xl mx-auto">
+<div class="flex flex-col items-center text-center">
+<div class="w-24 h-24 bg-center bg-no-repeat bg-cover rounded-full" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAMWqWs9cKhM6X3hvD_HJM5Ch0YYK2Q4OVFFY657EBCxFm14gnnrTqn4gt0Sfe8KM8FySnD5I4za_SeCHoA9zRMy0cix-qbLleQWNqtifD--6G0TIaGvSe_C-QivYhL7uoJ7VHStNpLSdHsZ3Z217eXSyTewzhpnRdSniPdsJx9y8USypOoadnpyspuzyF3729-4znMOLYXcOrwMa88wdFyhIJ3ISNFRDYDff9QZKGlsC8FVHu6l429miCR59U1qFEv3aDAeDPIDbMK");'></div>
+<h2 class="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Olivia Chen</h2>
+<p class="mt-1 text-gray-600 dark:text-gray-400">olivia.chen@email.com</p>
+</div>
+<div class="mt-8">
+<div class="flex border-b border-gray-200 dark:border-gray-700">
+<button class="flex-1 py-4 text-center font-semibold text-primary border-b-2 border-primary">My Reviews</button>
+<button class="flex-1 py-4 text-center font-semibold text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors">Saved Restaurants</button>
+</div>
+<div class="mt-8 space-y-6">
+<div class="flex flex-col gap-4 p-4 rounded-lg bg-background-light dark:bg-card-dark border border-gray-200 dark:border-gray-700">
+<div class="flex items-start gap-4">
+<div class="w-16 h-16 rounded-lg bg-center bg-no-repeat bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCLz-SdBRjaeyIOMv3ptfxx5JXc2ibaeOfhKzGHHHVHRZIwrrWpR4R7xvOGUKJ1QH8HwJ7_eKbZo6X-eDOK3XfqfWFJ0ffwh1aTdcaXWnjDFErFZL-2Qv9JhvBj6ollA-HaX7frEVAqr4m9urvd4elVliAH3G-QVZruMHWnjFcNnr8uiSJLGiPNAgmqdjI9SUmeXBJXahldQvSO19gs5YuACMCT1p3H-JWk3Ka3n8eHMEuMYsARbVgeRRCtHe0znW0e-MxbB33CgjxZ");'></div>
+<div class="flex-1">
+<h3 class="font-semibold text-gray-900 dark:text-white">The Cozy Corner Bistro</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">1 month ago</p>
+<div class="flex items-center mt-1">
+<div class="flex text-primary">
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+</div>
+</div>
+</div>
+<button class="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<p class="text-gray-600 dark:text-gray-300">The Cozy Corner Bistro exceeded my expectations! The food was delicious, the service was impeccable, and the ambiance was perfect for a romantic dinner. Highly recommend!</p>
+</div>
+<div class="flex flex-col gap-4 p-4 rounded-lg bg-background-light dark:bg-card-dark border border-gray-200 dark:border-gray-700">
+<div class="flex items-start gap-4">
+<div class="w-16 h-16 rounded-lg bg-center bg-no-repeat bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCrlDafJ5LeG738WPIpbPAxUCorcxqTlZbm-s-Mfn-FKjcHLVsQodE9IC6el25oTkZl6Rks7zp39xU3lABgufnraLpQUIZ4TQuschAUbm80fJiE1TyR4aFQAwZpnXpuo7XqqNHf3-0_tOtqcPU0nRB506qluAlbxi2XbJssLMoCbd3xKhZO7VYsyxhPWgqTwZlqgQmZBGIfu1mEVxjvj9kX4LzwmB8Iun5u2UncdhnsWEfozB5FUMzgEKlfz-uX6a2RFUXuyaWyfXBO");'></div>
+<div class="flex-1">
+<h3 class="font-semibold text-gray-900 dark:text-white">The Golden Spoon Diner</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">2 months ago</p>
+<div class="flex items-center mt-1">
+<div class="flex text-primary">
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-base">star</span>
+<span class="material-symbols-outlined text-gray-300 dark:text-gray-600 text-base">star_half</span>
+</div>
+</div>
+</div>
+<button class="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<p class="text-gray-600 dark:text-gray-300">I had a great experience at The Golden Spoon Diner. The menu had a good variety of options, and the food was well-prepared. The staff was friendly and attentive. Will definitely return.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-gray-700">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-around items-center h-16">
+<a class="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-xs">Home</span>
+</a>
+<a class="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="text-xs">Search</span>
+</a>
+<a class="flex flex-col items-center text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">favorite</span>
+<span class="text-xs">Favorites</span>
+</a>
+<a class="flex flex-col items-center text-primary dark:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-xs">Profile</span>
+</a>
+</div>
+</div>
+</footer>
+</div>
+
+</body></html>

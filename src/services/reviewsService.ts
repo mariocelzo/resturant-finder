@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { AuthService } from './authService';
+import { RecommendationService, InteractionType } from './recommendationService';
 
 export interface UserReview {
   id: string;
@@ -32,22 +33,41 @@ export class ReviewsService {
     }
   }
 
-  static async addReview(params: { placeId: string; restaurantName: string; rating: number; text: string }): Promise<boolean> {
+  static async addReview(params: { placeId: string; restaurantName: string; rating: number; text: string; cuisineType?: string; priceLevel?: number }): Promise<boolean> {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) return false;
+
+      const normalizedRating = Math.max(1, Math.min(5, Math.round(params.rating)));
+
       const payload = {
         place_id: params.placeId,
         restaurant_name: params.restaurantName,
         user_id: user.id,
-        rating: Math.max(1, Math.min(5, Math.round(params.rating))),
+        rating: normalizedRating,
         text: params.text?.trim().slice(0, 2000) || '',
       };
+
       const { error } = await supabase.from('user_reviews').insert([payload]);
       if (error) {
         console.error('❌ addReview error', error);
         return false;
       }
+
+      // Track interaction per raccomandazioni
+      RecommendationService.trackInteraction(
+        user.id,
+        params.placeId,
+        params.restaurantName,
+        InteractionType.REVIEW,
+        {
+          cuisineType: params.cuisineType,
+          priceLevel: params.priceLevel,
+          rating: normalizedRating,
+          isGuest: user.isGuest,
+        }
+      );
+
       return true;
     } catch (e) {
       console.error('❌ addReview error', e);

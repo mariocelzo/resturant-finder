@@ -25,7 +25,7 @@ export interface Restaurant {
 }
 
 // Import dei dati mock come fallback
-import { mockRestaurants, searchNearbyRestaurants as mockSearch } from './mockData';
+import { mockRestaurants, searchNearbyRestaurants as mockSearch, getMockReviews } from './mockData';
 
 function classifyCuisine(name: string, types: string[] = []): string {
   const n = (name || '').toLowerCase();
@@ -301,17 +301,26 @@ export interface PlaceReview {
 
 export const fetchPlaceReviews = async (placeId: string, max: number = 10): Promise<PlaceReview[]> => {
   if (!placeId) return [];
+
   if (!GOOGLE_API_KEY) {
-    // Nessuna API key: niente recensioni live
-    return [];
+    // Nessuna API key: usa recensioni mock
+    console.log('📄 REVIEWS: API Key mancante, usando recensioni mock per', placeId);
+    const mockReviews = getMockReviews(placeId);
+    console.log('✅ REVIEWS: Trovate', mockReviews.length, 'recensioni mock');
+    return mockReviews.slice(0, max);
   }
+
   // Google Place Details: fields=reviews (max 5 by default per payload)
   // Per ottenere più recensioni si possono usare più richieste passando review_no_translations e reviews_sort
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=reviews&reviews_no_translations=true&reviews_sort=newest&key=${GOOGLE_API_KEY}`;
   try {
     const res = await fetch(url);
     const data = await res.json();
-    if (data.status !== 'OK' || !data.result) return [];
+    if (data.status !== 'OK' || !data.result) {
+      console.log('⚠️ REVIEWS: Errore API, fallback a mock per', placeId);
+      const mockReviews = getMockReviews(placeId);
+      return mockReviews.slice(0, max);
+    }
     const reviews: any[] = data.result.reviews || [];
     const mapped: PlaceReview[] = reviews.slice(0, max).map((r: any, idx: number) => ({
       id: `${r.author_name || 'review'}_${r.time || idx}`,
@@ -324,7 +333,8 @@ export const fetchPlaceReviews = async (placeId: string, max: number = 10): Prom
     }));
     return mapped;
   } catch (e) {
-    console.error('❌ PLACE REVIEWS: Errore', e);
-    return [];
+    console.error('❌ PLACE REVIEWS: Errore, usando mock', e);
+    const mockReviews = getMockReviews(placeId);
+    return mockReviews.slice(0, max);
   }
 };

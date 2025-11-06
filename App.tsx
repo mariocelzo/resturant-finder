@@ -17,15 +17,17 @@ import ManageLocationsScreen from './src/screens/ManageLocationsScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AddReviewScreen from './src/screens/AddReviewScreen';
 import SearchScreen from './src/screens/SearchScreen';
+import SplashScreen from './src/screens/SplashScreen';
 
 // Definiamo i tipi per la navigazione
 export type RootStackParamList = {
+  Splash: undefined;
   MainTabs: undefined;
   RestaurantDetail: { restaurant: Restaurant };
   FavoritesList: undefined;
   Auth: undefined;
   ManageLocations: undefined;
-  AddReview: { placeId: string; restaurantName: string };
+  AddReview: { placeId: string; restaurantName: string; cuisineType?: string; priceLevel?: number };
 };
 
 export type TabParamList = {
@@ -49,38 +51,39 @@ function MainTabs() {
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 25,
-          left: 16,
-          right: 16,
+          bottom: 20,
+          left: 12,
+          right: 12,
           elevation: 0,
           backgroundColor: 'transparent',
           borderTopWidth: 0,
-          height: 65,
+          height: 72,
+          paddingBottom: 0,
         },
         tabBarBackground: () => (
           <BlurView
-            intensity={isDark ? 85 : 95}
+            intensity={isDark ? 90 : 100}
             tint={isDark ? 'dark' : 'light'}
             style={{
               ...StyleSheet.absoluteFillObject,
-              borderRadius: 28,
+              borderRadius: 32,
               overflow: 'hidden',
               backgroundColor: isDark
-                ? 'rgba(30, 30, 30, 0.85)'
-                : 'rgba(255, 255, 255, 0.85)',
-              borderWidth: isDark ? 0.5 : 0.5,
+                ? 'rgba(28, 28, 30, 0.92)'
+                : 'rgba(255, 255, 255, 0.92)',
+              borderWidth: isDark ? 1 : 1,
               borderColor: isDark
-                ? 'rgba(255, 255, 255, 0.12)'
-                : 'rgba(0, 0, 0, 0.06)',
+                ? 'rgba(255, 255, 255, 0.15)'
+                : 'rgba(0, 0, 0, 0.08)',
               ...Platform.select({
                 ios: {
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: isDark ? 0.3 : 0.15,
-                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 10 },
+                  shadowOpacity: isDark ? 0.4 : 0.18,
+                  shadowRadius: 20,
                 },
                 android: {
-                  elevation: 12,
+                  elevation: 16,
                 },
               }),
             }}
@@ -88,13 +91,17 @@ function MainTabs() {
         ),
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          marginBottom: 4,
-          letterSpacing: 0.2,
+          fontSize: 11,
+          fontWeight: '700',
+          marginBottom: 8,
+          marginTop: -2,
+          letterSpacing: 0.3,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 8,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 8,
         },
       }}
     >
@@ -104,17 +111,17 @@ function MainTabs() {
         options={{
           tabBarIcon: ({ focused, color }) => (
             <View style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
+              width: 42,
+              height: 42,
+              borderRadius: 21,
               backgroundColor: focused
-                ? (isDark ? theme.primary + '30' : theme.primary + '20')
+                ? (isDark ? theme.primary + '25' : theme.primary + '18')
                 : 'transparent',
               justifyContent: 'center',
               alignItems: 'center',
-              transform: [{ scale: focused ? 1.05 : 1 }],
+              transform: [{ scale: focused ? 1.08 : 1 }],
             }}>
-              <Text style={{ fontSize: focused ? 22 : 20 }}>🏠</Text>
+              <Text style={{ fontSize: focused ? 24 : 22 }}>🏠</Text>
             </View>
           ),
           title: 'Home'
@@ -126,17 +133,17 @@ function MainTabs() {
         options={{
           tabBarIcon: ({ focused, color }) => (
             <View style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
+              width: 42,
+              height: 42,
+              borderRadius: 21,
               backgroundColor: focused
-                ? (isDark ? theme.primary + '30' : theme.primary + '20')
+                ? (isDark ? theme.primary + '25' : theme.primary + '18')
                 : 'transparent',
               justifyContent: 'center',
               alignItems: 'center',
-              transform: [{ scale: focused ? 1.05 : 1 }],
+              transform: [{ scale: focused ? 1.08 : 1 }],
             }}>
-              <Text style={{ fontSize: focused ? 22 : 20 }}>🔎</Text>
+              <Text style={{ fontSize: focused ? 24 : 22 }}>🔎</Text>
             </View>
           ),
           title: 'Cerca'
@@ -146,57 +153,21 @@ function MainTabs() {
         name="Profilo"
         component={UserProfileScreen}
         options={{
-          tabBarIcon: ({ focused, color }) => {
-            // Avatar nel tab se disponibile
-            const Any = require('./src/services/userProfileService');
-            const useAvatar = () => {
-              const React2 = require('react');
-              const [url, setUrl] = React2.useState(null as string | null);
-              React2.useEffect(() => {
-                (async () => {
-                  try {
-                    const svc = Any.UserProfileService;
-                    const prof = await svc.getUserProfile();
-                    setUrl(prof?.avatar_url || null);
-                  } catch {}
-                })();
-              }, []);
-              return url;
-            };
-            const AvatarIcon: React.FC = () => {
-              const url = useAvatar();
-              const size = focused ? 30 : 26;
-              return (
-                <View style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: focused
-                    ? (isDark ? theme.primary + '30' : theme.primary + '20')
-                    : 'transparent',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  transform: [{ scale: focused ? 1.05 : 1 }],
-                }}>
-                  {url ? (
-                    <Image
-                      source={{ uri: url }}
-                      style={{
-                        width: size,
-                        height: size,
-                        borderRadius: size / 2,
-                        borderWidth: focused ? 2 : 0,
-                        borderColor: theme.primary,
-                      }}
-                    />
-                  ) : (
-                    <Text style={{ fontSize: focused ? 22 : 20 }}>👤</Text>
-                  )}
-                </View>
-              );
-            };
-            return <AvatarIcon />;
-          },
+          tabBarIcon: ({ focused, color }) => (
+            <View style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: focused
+                ? (isDark ? theme.primary + '25' : theme.primary + '18')
+                : 'transparent',
+              justifyContent: 'center',
+              alignItems: 'center',
+              transform: [{ scale: focused ? 1.08 : 1 }],
+            }}>
+              <Text style={{ fontSize: focused ? 24 : 22 }}>👤</Text>
+            </View>
+          ),
           title: 'Profilo'
         }}
       />
@@ -207,6 +178,18 @@ function MainTabs() {
 function RootNavigator() {
   const { loading, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const [showSplash, setShowSplash] = React.useState(true);
+  const navigationRef = React.useRef(null);
+
+  // Reset dello splash quando l'utente si autentica o si disconnette
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      setShowSplash(false);
+    } else {
+      // Quando l'utente fa logout, torna direttamente alla schermata Auth (non Splash)
+      setShowSplash(false);
+    }
+  }, [isAuthenticated]);
 
   if (loading) {
     return (
@@ -218,7 +201,15 @@ function RootNavigator() {
 
   if (!isAuthenticated) {
     return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName={showSplash ? "Splash" : "Auth"}
+      >
+        {showSplash && (
+          <Stack.Screen name="Splash">
+            {(props) => <SplashScreen {...props} />}
+          </Stack.Screen>
+        )}
         <Stack.Screen name="Auth">
           {() => <AuthScreen onAuthSuccess={() => { /* Gestito dal listener nel context */ }} />}
         </Stack.Screen>

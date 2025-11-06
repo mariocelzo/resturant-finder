@@ -7,6 +7,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (email: string, password: string) => Promise<boolean>;
   signInAsGuest: () => Promise<boolean>;
+  signInWithGoogle: () => Promise<boolean>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -100,15 +101,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       console.log('👻 Tentativo login guest...');
       const result = await AuthService.signInAsGuest();
-      
+
       if (result.success && result.user) {
         setUser(result.user);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('❌ Errore login guest context:', error);
+      return false;
+    }
+  };
+
+  const signInWithGoogle = async (): Promise<boolean> => {
+    try {
+      console.log('🔐 Tentativo Google Sign-In...');
+      const result = await AuthService.signInWithGoogle();
+
+      if (result.success) {
+        // OAuth flow initiated, user will be set via onAuthStateChange
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Errore Google Sign-In context:', error);
       return false;
     }
   };
@@ -135,6 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signIn,
     signUp,
     signInAsGuest,
+    signInWithGoogle,
     signOut,
     isAuthenticated: !!user,
   };

@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { Restaurant } from './googlePlaces';
 import { AuthService } from './authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RecommendationService, InteractionType } from './recommendationService';
 
 export interface FavoriteRestaurant extends Restaurant {
   favorited_at?: string;
@@ -56,6 +57,20 @@ export class FavoritesService {
       }
 
       console.log('✅ Ristorante aggiunto ai preferiti');
+
+      // Track interaction per raccomandazioni
+      RecommendationService.trackInteraction(
+        user.id,
+        restaurant.id,
+        restaurant.name,
+        InteractionType.FAVORITE,
+        {
+          cuisineType: restaurant.cuisine_type,
+          priceLevel: restaurant.priceLevel,
+          isGuest: user.isGuest,
+        }
+      );
+
       return true;
     } catch (error) {
       console.error('❌ Errore nel servizio preferiti:', error);
@@ -66,10 +81,10 @@ export class FavoritesService {
   /**
    * Rimuove un ristorante dai preferiti
    */
-  static async removeFromFavorites(restaurantId: string): Promise<boolean> {
+  static async removeFromFavorites(restaurantId: string, restaurantName?: string): Promise<boolean> {
     try {
       console.log('💔 Rimuovendo dai preferiti:', restaurantId);
-      
+
       const currentUser = await AuthService.getCurrentUser();
       if (!currentUser) {
         console.error('❌ Utente non autenticato');
@@ -78,7 +93,22 @@ export class FavoritesService {
 
       // Se è un guest user, usa AsyncStorage
       if (currentUser.isGuest) {
-        return await this.removeFromGuestFavorites(restaurantId);
+        const success = await this.removeFromGuestFavorites(restaurantId);
+
+        // Track interaction per raccomandazioni
+        if (success && restaurantName) {
+          RecommendationService.trackInteraction(
+            currentUser.id,
+            restaurantId,
+            restaurantName,
+            InteractionType.UNFAVORITE,
+            {
+              isGuest: currentUser.isGuest,
+            }
+          );
+        }
+
+        return success;
       }
 
       // Altrimenti usa Supabase
@@ -94,6 +124,20 @@ export class FavoritesService {
       }
 
       console.log('✅ Ristorante rimosso dai preferiti');
+
+      // Track interaction per raccomandazioni
+      if (restaurantName) {
+        RecommendationService.trackInteraction(
+          currentUser.id,
+          restaurantId,
+          restaurantName,
+          InteractionType.UNFAVORITE,
+          {
+            isGuest: currentUser.isGuest,
+          }
+        );
+      }
+
       return true;
     } catch (error) {
       console.error('❌ Errore nel servizio preferiti:', error);

@@ -8,6 +8,8 @@ import {
   ScrollView,
   Switch,
   TextInput,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { placesAutocomplete, getPlaceDetails, geocodeLocation } from '../services/googlePlaces';
@@ -15,6 +17,10 @@ import { UserProfileService, UserLocation } from '../services/userProfileService
 import { useLocationSelection } from '../contexts/LocationContext';
 import SavedLocationChips from './SavedLocationChips';
 import { useCurrentLocation } from '../hooks/useCurrentLocation';
+import { useTheme } from '../contexts/ThemeContext';
+import { Spacing, BorderRadius, Typography, Shadows } from '../styles/designSystem';
+
+type TabType = 'quick' | 'cuisine' | 'location';
 
 export interface FilterOptions {
   cuisineTypes: string[];
@@ -64,13 +70,61 @@ const SORT_OPTIONS = [
   { value: 'price', label: '💰 Per Prezzo', icon: '💰' },
 ];
 
-export default function FilterModal({ 
-  visible, 
-  onClose, 
-  onApplyFilters, 
-  currentFilters 
+// Preset intelligenti per filtri rapidi
+const QUICK_PRESETS = [
+  {
+    id: 'top_rated',
+    title: 'Top Rated',
+    icon: '⭐',
+    description: 'I migliori ristoranti',
+    filters: { minRating: 4.5, sortBy: 'rating' as const },
+  },
+  {
+    id: 'nearby',
+    title: 'Vicino a me',
+    icon: '📍',
+    description: 'Entro 2km',
+    filters: { maxDistance: 2000, sortBy: 'distance' as const },
+  },
+  {
+    id: 'budget',
+    title: 'Economici',
+    icon: '💰',
+    description: 'Fascia bassa',
+    filters: { priceRange: [1, 2] as [number, number], sortBy: 'price' as const },
+  },
+  {
+    id: 'open_now',
+    title: 'Aperti ora',
+    icon: '🟢',
+    description: 'Solo aperti',
+    filters: { showOnlyOpen: true, sortBy: 'distance' as const },
+  },
+  {
+    id: 'premium',
+    title: 'Premium',
+    icon: '✨',
+    description: 'Alta qualità',
+    filters: { minRating: 4.0, priceRange: [3, 4] as [number, number], sortBy: 'rating' as const },
+  },
+];
+
+// Cucine popolari raggruppate
+const POPULAR_CUISINES = ['Tutti', 'Pizzeria', 'Sushi', 'Burger', 'Italiano', 'Trattoria'];
+const INTERNATIONAL_CUISINES = ['Cinese', 'Giapponese', 'Indiano', 'Messicano', 'Mediterranea'];
+const SPECIALTY_CUISINES = ['Seafood', 'Vegetariana', 'Vegano', 'BBQ', 'Steakhouse'];
+const CASUAL_CUISINES = ['Fast Food', 'Panini', 'Kebab', 'Dessert', 'Caffè', 'Bar', 'Pasticceria'];
+
+export default function FilterModal({
+  visible,
+  onClose,
+  onApplyFilters,
+  currentFilters
 }: FilterModalProps) {
+  const { theme } = useTheme();
   const [filters, setFilters] = useState<FilterOptions>(currentFilters);
+  const [activeTab, setActiveTab] = useState<TabType>('quick');
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const { setManualLocation, clearLocation, locationQuery } = useLocationSelection();
   const [queryInput, setQueryInput] = useState<string>(currentFilters.locationQuery || '');
   const [suggestions, setSuggestions] = useState<{ description: string; placeId: string }[]>([]);
@@ -78,6 +132,7 @@ export default function FilterModal({
   const [savedLocations, setSavedLocations] = useState<UserLocation[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const { getCurrentLocation } = useCurrentLocation();
+  const tabIndicatorAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setQueryInput(currentFilters.locationQuery || locationQuery || '');
@@ -95,6 +150,24 @@ export default function FilterModal({
       }
     })();
   }, [visible]);
+
+  useEffect(() => {
+    const tabIndex = activeTab === 'quick' ? 0 : activeTab === 'cuisine' ? 1 : 2;
+    Animated.spring(tabIndicatorAnim, {
+      toValue: tabIndex,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 8,
+    }).start();
+  }, [activeTab]);
+
+  const applyPreset = (presetId: string) => {
+    const preset = QUICK_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      setFilters(prev => ({ ...prev, ...preset.filters }));
+      setSelectedPreset(presetId);
+    }
+  };
 
   const chooseCurrentLocation = async () => {
     const cur = await getCurrentLocation();
@@ -226,259 +299,429 @@ export default function FilterModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.cancelButton}>Annulla</Text>
+        <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={[styles.cancelButton, { color: theme.textSecondary }]}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            🔍 Filtri {activeFiltersCount() > 0 && `(${activeFiltersCount()})`}
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            Filtri {activeFiltersCount() > 0 && `(${activeFiltersCount()})`}
           </Text>
-          <TouchableOpacity onPress={handleReset}>
-            <Text style={styles.resetButton}>Reset</Text>
+          <TouchableOpacity onPress={handleReset} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={[styles.resetButton, { color: theme.primary }]}>Reset</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          
-          {/* Tipo di Cucina */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🍽️ Tipo di Cucina</Text>
-            <View style={styles.cuisineGrid}>
-              {CUISINE_OPTIONS.map(cuisine => (
-                <TouchableOpacity
-                  key={cuisine}
-                  style={[
-                    styles.cuisineChip,
-                    filters.cuisineTypes.includes(cuisine) && styles.cuisineChipActive
-                  ]}
-                  onPress={() => toggleCuisine(cuisine)}
-                >
-                  <Text style={styles.cuisineIcon}>{getCuisineIcon(cuisine)}</Text>
-                  <Text style={[
-                    styles.cuisineText,
-                    filters.cuisineTypes.includes(cuisine) && styles.cuisineTextActive
-                  ]}>
-                    {cuisine}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {/* Tab Bar */}
+        <View style={[styles.tabBar, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => setActiveTab('quick')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, { color: activeTab === 'quick' ? theme.primary : theme.textSecondary }]}>
+                ⚡ Rapidi
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => setActiveTab('cuisine')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, { color: activeTab === 'cuisine' ? theme.primary : theme.textSecondary }]}>
+                🍽️ Cucina
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tab}
+              onPress={() => setActiveTab('location')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.tabText, { color: activeTab === 'location' ? theme.primary : theme.textSecondary }]}>
+                📍 Luogo
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Fascia di Prezzo */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>💰 Fascia di Prezzo</Text>
-            <Text style={styles.rangeValue}>{getPriceText(filters.priceRange)}</Text>
-            <View style={styles.sliderContainer}>
-              <Text style={styles.sliderLabel}>€</Text>
-              <View style={styles.doubleSlider}>
-                <Text style={styles.sliderSubtitle}>Min: €{filters.priceRange[0]}</Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={1}
-                  maximumValue={4}
-                  step={1}
-                  value={filters.priceRange[0]}
-                  onValueChange={(value) => 
-                    setFilters(prev => ({ 
-                      ...prev, 
-                      priceRange: [value, Math.max(value, prev.priceRange[1])]
-                    }))
-                  }
-                  minimumTrackTintColor="#FF6B6B"
-                  maximumTrackTintColor="#ddd"
-                  thumbTintColor="#FF6B6B"
-                />
-                <Text style={styles.sliderSubtitle}>Max: €{filters.priceRange[1]}</Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={1}
-                  maximumValue={4}
-                  step={1}
-                  value={filters.priceRange[1]}
-                  onValueChange={(value) => 
-                    setFilters(prev => ({ 
-                      ...prev, 
-                      priceRange: [Math.min(value, prev.priceRange[0]), value]
-                    }))
-                  }
-                  minimumTrackTintColor="#FF6B6B"
-                  maximumTrackTintColor="#ddd"
-                  thumbTintColor="#FF6B6B"
-                />
-              </View>
-              <Text style={styles.sliderLabel}>€€€€</Text>
-            </View>
-          </View>
-
-          {/* Rating Minimo */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>⭐ Rating Minimo</Text>
-            <Text style={styles.rangeValue}>
-              {filters.minRating > 0 ? `${filters.minRating}+ stelle` : 'Qualsiasi rating'}
-            </Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={5}
-              step={0.5}
-              value={filters.minRating}
-              onValueChange={(value) => 
-                setFilters(prev => ({ ...prev, minRating: value }))
+          <Animated.View
+            style={[
+              styles.tabIndicator,
+              { backgroundColor: theme.primary },
+              {
+                transform: [{
+                  translateX: tabIndicatorAnim.interpolate({
+                    inputRange: [0, 1, 2],
+                    outputRange: [0, Dimensions.get('window').width / 3, (Dimensions.get('window').width / 3) * 2]
+                  })
+                }]
               }
-              minimumTrackTintColor="#FF6B6B"
-              maximumTrackTintColor="#ddd"
-              thumbTintColor="#FF6B6B"
-            />
-            <View style={styles.sliderLabels}>
-              <Text style={styles.sliderLabel}>0⭐</Text>
-              <Text style={styles.sliderLabel}>5⭐</Text>
-            </View>
-          </View>
+            ]}
+          />
+        </View>
 
-          {/* Località manuale */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>⭐ Posizioni Salvate</Text>
-            <SavedLocationChips
-              savedLocations={savedLocations}
-              selectedId={selectedSavedId}
-              onSelectCurrent={chooseCurrentLocation}
-              onSelectSaved={(loc) => {
-                setSelectedSavedId(loc.id || null);
-                setManualLocation(loc.name, { latitude: loc.latitude, longitude: loc.longitude, formattedAddress: loc.address });
-                setQueryInput(loc.address);
-                setFilters(prev => ({ ...prev, locationQuery: loc.address }));
-              }}
-            />
-          </View>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
 
-          {/* Località manuale */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📍 Località</Text>
-            <Text style={styles.helperText}>Inserisci città/indirizzo oppure lascia vuoto per usare la tua posizione</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Es. Napoli, Italia"
-              value={queryInput}
-              onChangeText={(text) => {
-                setQueryInput(text);
-                setSelectedSavedId(null);
-                setFilters(prev => ({ ...prev, locationQuery: text }));
-              }}
-              autoCorrect={false}
-              autoCapitalize="none"
-              placeholderTextColor="#999"
-            />
-            {suggestions.length > 0 && (
-              <View style={styles.suggestionsBox}>
-                {suggestions.map(s => (
+          {/* TAB: QUICK FILTERS */}
+          {activeTab === 'quick' && (
+            <>
+              {/* Preset Rapidi */}
+              <View style={styles.presetsContainer}>
+                {QUICK_PRESETS.map(preset => (
                   <TouchableOpacity
-                    key={s.placeId}
-                    style={styles.suggestionItem}
-                  onPress={async () => {
-                    const details = await getPlaceDetails(s.placeId);
-                    if (details) {
-                      setSelectedSavedId(null);
-                      setManualLocation(s.description, {
-                        latitude: details.latitude,
-                        longitude: details.longitude,
-                        formattedAddress: details.formattedAddress,
-                      });
-                        setQueryInput(s.description);
-                        setFilters(prev => ({ ...prev, locationQuery: s.description }));
-                        setSuggestions([]);
-                      }
-                    }}
+                    key={preset.id}
+                    style={[
+                      styles.presetCard,
+                      { backgroundColor: theme.cardBackground, borderColor: theme.border },
+                      selectedPreset === preset.id && { borderColor: theme.primary, borderWidth: 2 },
+                    ]}
+                    onPress={() => applyPreset(preset.id)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.suggestionText}>{s.description}</Text>
+                    <View style={styles.presetHeader}>
+                      <Text style={styles.presetIcon}>{preset.icon}</Text>
+                      <View style={styles.presetTexts}>
+                        <Text style={[styles.presetTitle, { color: theme.text }]}>{preset.title}</Text>
+                        <Text style={[styles.presetDescription, { color: theme.textSecondary }]}>
+                          {preset.description}
+                        </Text>
+                      </View>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
-            )}
-            {!!filters.locationQuery && (
-              <TouchableOpacity onPress={() => { setFilters(prev => ({ ...prev, locationQuery: '' })); setQueryInput(''); setSuggestions([]); setSelectedSavedId(null); clearLocation(); }} style={styles.clearLocBtn}>
-                <Text style={styles.clearLocText}>Usa posizione attuale</Text>
-              </TouchableOpacity>
-            )}
-          </View>
 
-          {/* Distanza Massima */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📍 Distanza Massima</Text>
-            <Text style={styles.rangeValue}>{getDistanceText(filters.maxDistance)}</Text>
-            <Slider
-              style={styles.slider}
-              minimumValue={500}
-              maximumValue={200000}
-              step={1000}
-              value={filters.maxDistance}
-              onValueChange={(value) => 
-                setFilters(prev => ({ ...prev, maxDistance: value }))
-              }
-              minimumTrackTintColor="#FF6B6B"
-              maximumTrackTintColor="#ddd"
-              thumbTintColor="#FF6B6B"
-            />
-            <View style={styles.sliderLabels}>
-              <Text style={styles.sliderLabel}>500m</Text>
-              <Text style={styles.sliderLabel}>200km</Text>
-            </View>
-          </View>
+              {/* Controlli Avanzati */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>🎚️ Personalizza</Text>
 
-          {/* Solo Aperti */}
-          <View style={styles.section}>
-            <View style={styles.switchRow}>
-              <View>
-                <Text style={styles.sectionTitle}>🟢 Solo Ristoranti Aperti</Text>
-                <Text style={styles.switchSubtitle}>
-                  Mostra solo i ristoranti attualmente aperti
-                </Text>
-              </View>
-              <Switch
-                value={filters.showOnlyOpen}
-                onValueChange={(value) => 
-                  setFilters(prev => ({ ...prev, showOnlyOpen: value }))
-                }
-                trackColor={{ false: '#ddd', true: '#FF6B6B' }}
-                thumbColor="#fff"
-              />
-            </View>
-          </View>
-
-          {/* Ordinamento */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔢 Ordina per</Text>
-            <View style={styles.sortOptions}>
-              {SORT_OPTIONS.map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.sortOption,
-                    filters.sortBy === option.value && styles.sortOptionActive
-                  ]}
-                  onPress={() =>
-                    setFilters(prev => ({ ...prev, sortBy: option.value as FilterOptions['sortBy'] }))
-                  }
-                >
-                  <Text style={styles.sortIcon}>{option.icon}</Text>
-                  <Text style={[
-                    styles.sortText,
-                    filters.sortBy === option.value && styles.sortTextActive
-                  ]}>
-                    {option.label}
+                {/* Fascia di Prezzo */}
+                <View style={styles.controlGroup}>
+                  <Text style={[styles.controlLabel, { color: theme.text }]}>💰 Prezzo</Text>
+                  <Text style={[styles.controlValue, { color: theme.primary }]}>
+                    {getPriceText(filters.priceRange)}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                  <View style={styles.sliderContainer}>
+                    <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>€</Text>
+                    <View style={styles.doubleSlider}>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={1}
+                        maximumValue={4}
+                        step={1}
+                        value={filters.priceRange[0]}
+                        onValueChange={(value) =>
+                          setFilters(prev => ({
+                            ...prev,
+                            priceRange: [value, Math.max(value, prev.priceRange[1])]
+                          }))
+                        }
+                        minimumTrackTintColor={theme.primary}
+                        maximumTrackTintColor={theme.border}
+                        thumbTintColor={theme.primary}
+                      />
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={1}
+                        maximumValue={4}
+                        step={1}
+                        value={filters.priceRange[1]}
+                        onValueChange={(value) =>
+                          setFilters(prev => ({
+                            ...prev,
+                            priceRange: [Math.min(value, prev.priceRange[0]), value]
+                          }))
+                        }
+                        minimumTrackTintColor={theme.primary}
+                        maximumTrackTintColor={theme.border}
+                        thumbTintColor={theme.primary}
+                      />
+                    </View>
+                    <Text style={[styles.sliderLabel, { color: theme.textSecondary }]}>€€€€</Text>
+                  </View>
+                </View>
+
+                {/* Rating Minimo */}
+                <View style={[styles.controlGroup, { marginTop: Spacing.lg }]}>
+                  <Text style={[styles.controlLabel, { color: theme.text }]}>⭐ Rating</Text>
+                  <Text style={[styles.controlValue, { color: theme.primary }]}>
+                    {filters.minRating > 0 ? `${filters.minRating}+` : 'Qualsiasi'}
+                  </Text>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={0}
+                    maximumValue={5}
+                    step={0.5}
+                    value={filters.minRating}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, minRating: value }))}
+                    minimumTrackTintColor={theme.primary}
+                    maximumTrackTintColor={theme.border}
+                    thumbTintColor={theme.primary}
+                  />
+                </View>
+
+                {/* Distanza Massima */}
+                <View style={[styles.controlGroup, { marginTop: Spacing.lg }]}>
+                  <Text style={[styles.controlLabel, { color: theme.text }]}>📍 Distanza</Text>
+                  <Text style={[styles.controlValue, { color: theme.primary }]}>
+                    {getDistanceText(filters.maxDistance)}
+                  </Text>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={500}
+                    maximumValue={200000}
+                    step={1000}
+                    value={filters.maxDistance}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, maxDistance: value }))}
+                    minimumTrackTintColor={theme.primary}
+                    maximumTrackTintColor={theme.border}
+                    thumbTintColor={theme.primary}
+                  />
+                </View>
+
+                {/* Switch Solo Aperti */}
+                <View style={[styles.switchRow, { marginTop: Spacing.lg }]}>
+                  <Text style={[styles.controlLabel, { color: theme.text }]}>🟢 Solo aperti</Text>
+                  <Switch
+                    value={filters.showOnlyOpen}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, showOnlyOpen: value }))}
+                    trackColor={{ false: theme.border, true: theme.primary }}
+                    thumbColor="#fff"
+                  />
+                </View>
+
+                {/* Ordinamento */}
+                <View style={{ marginTop: Spacing.lg }}>
+                  <Text style={[styles.controlLabel, { color: theme.text, marginBottom: Spacing.sm }]}>
+                    🔢 Ordina per
+                  </Text>
+                  <View style={styles.sortOptions}>
+                    {SORT_OPTIONS.map(option => (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.sortOption,
+                          { backgroundColor: theme.surface, borderColor: theme.border },
+                          filters.sortBy === option.value && { backgroundColor: theme.primary, borderColor: theme.primary }
+                        ]}
+                        onPress={() => setFilters(prev => ({ ...prev, sortBy: option.value as FilterOptions['sortBy'] }))}
+                      >
+                        <Text style={styles.sortIcon}>{option.icon}</Text>
+                        <Text style={[
+                          styles.sortText,
+                          { color: theme.textSecondary },
+                          filters.sortBy === option.value && styles.sortTextActive
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* TAB: CUISINE */}
+          {activeTab === 'cuisine' && (
+            <>
+              {/* Popolari */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>⭐ Popolari</Text>
+                <View style={styles.cuisineGrid}>
+                  {POPULAR_CUISINES.map(cuisine => (
+                    <TouchableOpacity
+                      key={cuisine}
+                      style={[
+                        styles.cuisineChip,
+                        { backgroundColor: theme.surface, borderColor: theme.border },
+                        filters.cuisineTypes.includes(cuisine) && { backgroundColor: theme.primary, borderColor: theme.primary }
+                      ]}
+                      onPress={() => toggleCuisine(cuisine)}
+                    >
+                      <Text style={styles.cuisineIcon}>{getCuisineIcon(cuisine)}</Text>
+                      <Text style={[
+                        styles.cuisineText,
+                        { color: theme.textSecondary },
+                        filters.cuisineTypes.includes(cuisine) && styles.cuisineTextActive
+                      ]}>
+                        {cuisine}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Internazionali */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>🌍 Internazionali</Text>
+                <View style={styles.cuisineGrid}>
+                  {INTERNATIONAL_CUISINES.map(cuisine => (
+                    <TouchableOpacity
+                      key={cuisine}
+                      style={[
+                        styles.cuisineChip,
+                        { backgroundColor: theme.surface, borderColor: theme.border },
+                        filters.cuisineTypes.includes(cuisine) && { backgroundColor: theme.primary, borderColor: theme.primary }
+                      ]}
+                      onPress={() => toggleCuisine(cuisine)}
+                    >
+                      <Text style={styles.cuisineIcon}>{getCuisineIcon(cuisine)}</Text>
+                      <Text style={[
+                        styles.cuisineText,
+                        { color: theme.textSecondary },
+                        filters.cuisineTypes.includes(cuisine) && styles.cuisineTextActive
+                      ]}>
+                        {cuisine}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Specialità */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>✨ Specialità</Text>
+                <View style={styles.cuisineGrid}>
+                  {SPECIALTY_CUISINES.map(cuisine => (
+                    <TouchableOpacity
+                      key={cuisine}
+                      style={[
+                        styles.cuisineChip,
+                        { backgroundColor: theme.surface, borderColor: theme.border },
+                        filters.cuisineTypes.includes(cuisine) && { backgroundColor: theme.primary, borderColor: theme.primary }
+                      ]}
+                      onPress={() => toggleCuisine(cuisine)}
+                    >
+                      <Text style={styles.cuisineIcon}>{getCuisineIcon(cuisine)}</Text>
+                      <Text style={[
+                        styles.cuisineText,
+                        { color: theme.textSecondary },
+                        filters.cuisineTypes.includes(cuisine) && styles.cuisineTextActive
+                      ]}>
+                        {cuisine}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Casual */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>🍔 Casual</Text>
+                <View style={styles.cuisineGrid}>
+                  {CASUAL_CUISINES.map(cuisine => (
+                    <TouchableOpacity
+                      key={cuisine}
+                      style={[
+                        styles.cuisineChip,
+                        { backgroundColor: theme.surface, borderColor: theme.border },
+                        filters.cuisineTypes.includes(cuisine) && { backgroundColor: theme.primary, borderColor: theme.primary }
+                      ]}
+                      onPress={() => toggleCuisine(cuisine)}
+                    >
+                      <Text style={styles.cuisineIcon}>{getCuisineIcon(cuisine)}</Text>
+                      <Text style={[
+                        styles.cuisineText,
+                        { color: theme.textSecondary },
+                        filters.cuisineTypes.includes(cuisine) && styles.cuisineTextActive
+                      ]}>
+                        {cuisine}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* TAB: LOCATION */}
+          {activeTab === 'location' && (
+            <>
+              {/* Posizioni Salvate */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>⭐ Posizioni Salvate</Text>
+                <SavedLocationChips
+                  savedLocations={savedLocations}
+                  selectedId={selectedSavedId}
+                  onSelectCurrent={chooseCurrentLocation}
+                  onSelectSaved={(loc) => {
+                    setSelectedSavedId(loc.id || null);
+                    setManualLocation(loc.name, { latitude: loc.latitude, longitude: loc.longitude, formattedAddress: loc.address });
+                    setQueryInput(loc.address);
+                    setFilters(prev => ({ ...prev, locationQuery: loc.address }));
+                  }}
+                />
+              </View>
+
+              {/* Ricerca Località */}
+              <View style={[styles.section, { backgroundColor: theme.cardBackground, shadowColor: theme.shadowColor }]}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>📍 Cerca Località</Text>
+                <Text style={[styles.helperText, { color: theme.textSecondary }]}>
+                  Inserisci città/indirizzo oppure lascia vuoto per usare la tua posizione
+                </Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
+                  placeholder="Es. Napoli, Italia"
+                  value={queryInput}
+                  onChangeText={(text) => {
+                    setQueryInput(text);
+                    setSelectedSavedId(null);
+                    setFilters(prev => ({ ...prev, locationQuery: text }));
+                  }}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                {suggestions.length > 0 && (
+                  <View style={[styles.suggestionsBox, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+                    {suggestions.map(s => (
+                      <TouchableOpacity
+                        key={s.placeId}
+                        style={[styles.suggestionItem, { borderBottomColor: theme.border }]}
+                        onPress={async () => {
+                          const details = await getPlaceDetails(s.placeId);
+                          if (details) {
+                            setSelectedSavedId(null);
+                            setManualLocation(s.description, {
+                              latitude: details.latitude,
+                              longitude: details.longitude,
+                              formattedAddress: details.formattedAddress,
+                            });
+                            setQueryInput(s.description);
+                            setFilters(prev => ({ ...prev, locationQuery: s.description }));
+                            setSuggestions([]);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.suggestionText, { color: theme.text }]}>{s.description}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                {!!filters.locationQuery && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFilters(prev => ({ ...prev, locationQuery: '' }));
+                      setQueryInput('');
+                      setSuggestions([]);
+                      setSelectedSavedId(null);
+                      clearLocation();
+                    }}
+                    style={styles.clearLocBtn}
+                  >
+                    <Text style={[styles.clearLocText, { color: theme.primary }]}>Usa posizione attuale</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
+          )}
 
         </ScrollView>
 
         {/* Footer con pulsanti */}
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+        <View style={[styles.footer, { backgroundColor: theme.cardBackground, borderTopColor: theme.border }]}>
+          <TouchableOpacity style={[styles.applyButton, { backgroundColor: theme.primary }]} onPress={handleApply}>
             <Text style={styles.applyButtonText}>
               ✅ Applica Filtri {activeFiltersCount() > 0 && `(${activeFiltersCount()})`}
             </Text>
@@ -489,168 +732,134 @@ export default function FilterModal({
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
   },
   cancelButton: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: Typography.fontSize.base,
   },
   resetButton: {
-    fontSize: 16,
-    color: '#FF6B6B',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.lg,
   },
   section: {
-    backgroundColor: '#fff',
-    marginVertical: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    marginVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.base,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.base,
   },
   cuisineGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: Spacing.sm,
   },
   cuisineChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.xxl,
+    marginBottom: Spacing.sm,
     borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  cuisineChipActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
   },
   cuisineIcon: {
-    fontSize: 16,
-    marginRight: 6,
+    fontSize: Typography.fontSize.base,
+    marginRight: Spacing.xs + 2,
   },
   cuisineText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
   },
   cuisineTextActive: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   rangeValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF6B6B',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: Spacing.base,
   },
   helperText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.xs,
+    marginBottom: Spacing.sm,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#333',
+    borderRadius: BorderRadius.base,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    fontSize: Typography.fontSize.base,
   },
   clearLocBtn: {
     alignSelf: 'flex-start',
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.sm,
   },
   clearLocText: {
-    color: '#FF6B6B',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   suggestionsBox: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 8,
-    marginTop: 6,
+    borderRadius: BorderRadius.base,
+    marginTop: Spacing.xs + 2,
   },
   suggestionItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f2',
   },
   suggestionText: {
-    color: '#333',
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
   },
   sliderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm + 2,
   },
   doubleSlider: {
     flex: 1,
   },
   sliderSubtitle: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 5,
+    fontSize: Typography.fontSize.xs,
+    marginBottom: Spacing.xs + 1,
   },
   slider: {
     flex: 1,
     height: 40,
   },
-  sliderThumb: {
-    backgroundColor: '#FF6B6B',
-    width: 20,
-    height: 20,
-  },
   sliderLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 5,
+    marginTop: Spacing.xs + 1,
   },
   sliderLabel: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: Typography.fontSize.xs,
   },
   switchRow: {
     flexDirection: 'row',
@@ -658,56 +867,119 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchSubtitle: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    marginTop: Spacing.xs,
   },
   sortOptions: {
-    gap: 10,
+    gap: Spacing.sm + 2,
   },
   sortOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.base,
     borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  sortOptionActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
   },
   sortIcon: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: Typography.fontSize.lg,
+    marginRight: Spacing.sm + 2,
   },
   sortText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
   },
   sortTextActive: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold,
   },
   footer: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.base,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   applyButton: {
-    backgroundColor: '#FF6B6B',
-    paddingVertical: 15,
-    borderRadius: 8,
+    paddingVertical: Spacing.base,
+    borderRadius: BorderRadius.base,
     alignItems: 'center',
   },
   applyButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+  },
+  // Tab Bar Styles
+  tabBar: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    position: 'relative',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  tabText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 3,
+    width: '33.33%',
+    borderRadius: BorderRadius.xs,
+  },
+  // Preset Cards
+  presetsContainer: {
+    paddingVertical: Spacing.md,
+    gap: Spacing.md,
+  },
+  presetCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    ...Shadows.sm,
+  },
+  presetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  presetIcon: {
+    fontSize: 32,
+    marginRight: Spacing.base,
+  },
+  presetTexts: {
+    flex: 1,
+  },
+  presetTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    marginBottom: Spacing.xs / 2,
+  },
+  presetDescription: {
+    fontSize: Typography.fontSize.sm,
+  },
+  // Control Group
+  controlGroup: {
+    marginBottom: Spacing.base,
+  },
+  controlLabel: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold,
+    marginBottom: Spacing.xs,
+  },
+  controlValue: {
+    fontSize: Typography.fontSize.md,
+    fontWeight: Typography.fontWeight.bold,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
 });

@@ -266,40 +266,50 @@ export class UserProfileService {
   /**
    * Ottiene la posizione di default per le ricerche
    */
-  static async getDefaultSearchLocation(): Promise<{ latitude: number; longitude: number; address: string } | null> {
+  static async getDefaultSearchLocation(): Promise<{ name: string; latitude: number; longitude: number; address: string } | null> {
     try {
       const currentUser = await AuthService.getCurrentUser();
-      if (!currentUser) return null;
+      if (!currentUser) {
+        console.log('📍 getDefaultSearchLocation: Nessun utente autenticato');
+        return null;
+      }
 
       // Se è guest user, controlla AsyncStorage
       if (currentUser.isGuest) {
+        console.log('📍 getDefaultSearchLocation: Cercando posizione guest...');
         const guestLocations = await this.getGuestLocations(currentUser.id);
         const defaultLocation = guestLocations.find(loc => loc.isDefault);
-        
+
         if (defaultLocation) {
+          console.log('✅ getDefaultSearchLocation: Trovata posizione guest:', defaultLocation.name);
           return {
+            name: defaultLocation.name,
             latitude: defaultLocation.latitude,
             longitude: defaultLocation.longitude,
             address: defaultLocation.address
           };
         }
+        console.log('⚠️ getDefaultSearchLocation: Nessuna posizione default guest');
         return null;
       }
 
       // Altrimenti cerca in Supabase
+      console.log('📍 getDefaultSearchLocation: Cercando posizione Supabase...');
       const { data, error } = await supabase
         .from('user_locations')
-        .select('latitude, longitude, address')
+        .select('name, latitude, longitude, address')
         .eq('user_id', currentUser.id)
         .eq('is_default', true)
         .single();
 
       if (error || !data) {
-        console.log('📍 Nessuna posizione default trovata');
+        console.log('⚠️ getDefaultSearchLocation: Nessuna posizione default Supabase');
         return null;
       }
 
+      console.log('✅ getDefaultSearchLocation: Trovata posizione Supabase:', data.name);
       return {
+        name: data.name,
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address

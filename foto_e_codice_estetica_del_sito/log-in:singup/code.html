@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#f97306",
+              "background-light": "#f0f0f0",
+              "card-light": "#ffffff",
+              "text-dark": "#1a1a1a",
+              "text-light": "#6b7280",
+            },
+            fontFamily: {
+              display: ["Plus Jakarta Sans"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+              lg: "0.75rem",
+              xl: "1rem",
+              full: "9999px",
+            },
+            boxShadow: {
+                'apple': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            }
+          },
+        },
+      };
+    </script>
+</head>
+<body class="bg-background-light font-display text-text-dark">
+<div class="flex flex-col min-h-screen">
+<main class="flex-grow flex items-center justify-center">
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-md mx-auto">
+<div class="text-center mb-8">
+<div class="inline-flex items-center justify-center gap-3 mb-4">
+<div class="w-10 h-10 text-primary">
+<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M44 11.2727C44 14.0109 39.8386 16.3957 33.69 17.6364C39.8386 18.877 44 21.2618 44 24C44 26.7382 39.8386 29.123 33.69 30.3636C39.8386 31.6043 44 33.9891 44 36.7273C44 40.7439 35.0457 44 24 44C12.9543 44 4 40.7439 4 36.7273C4 33.9891 8.16144 31.6043 14.31 30.3636C8.16144 29.123 4 26.7382 4 24C4 21.2618 8.16144 18.877 14.31 17.6364C8.16144 16.3957 4 14.0109 4 11.2727C4 7.25611 12.9543 4 24 4C35.0457 4 44 7.25611 44 11.2727Z" fill="currentColor"></path>
+</svg>
+</div>
+<h1 class="text-3xl font-bold text-text-dark">TasteTrail</h1>
+</div>
+<p class="text-text-light">Welcome back! Please enter your details.</p>
+</div>
+<div class="bg-card-light p-8 rounded-xl shadow-apple">
+<form class="space-y-6">
+<div>
+<label class="block text-sm font-medium text-text-dark" for="email">Email or Username</label>
+<div class="mt-1">
+<input class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-text-dark" id="email" name="email" placeholder="you@example.com" type="email"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-text-dark" for="password">Password</label>
+<div class="mt-1">
+<input class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-text-dark" id="password" name="password" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div>
+<button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" type="submit">
+                  Log In
+                </button>
+</div>
+</form>
+<div class="mt-6">
+<div class="relative">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-gray-200"></div>
+</div>
+<div class="relative flex justify-center text-sm">
+<span class="px-2 bg-card-light text-text-light">Or continue with</span>
+</div>
+</div>
+<div class="mt-6 grid grid-cols-2 gap-3">
+<div>
+<a class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors" href="#">
+<span class="sr-only">Sign in with Google</span>
+<svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+</a>
+</div>
+<div>
+<a class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors" href="#">
+<span class="sr-only">Sign in with Apple</span>
+<svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+<path d="M12.022 5.758c.957-1.127 2.146-1.785 3.36-1.802.26.002.518.026.772.072-1.284.976-2.235 2.37-2.67 3.998-.56 2.08.196 4.143 1.488 5.617.817.95 1.91 1.628 3.12 1.83.218.034.43.048.636.048.713 0 1.42-.162 2.086-.468-.088.35-.19.7-.31 1.042-.71 2.09-2.02 3.864-3.794 4.88-1.578.905-3.414 1.113-5.114.545-1.282-.43-2.48-1.18-3.45-2.18-1.537-1.586-2.58-3.6-2.91-5.742-.047-.306-.07-.617-.07-.93 0-1.897.688-3.655 1.88-4.966zm.388-2.68c.03.002.058.006.085.012.062.012.124.028.185.045-1.585.16-3.08 1.04-3.95 2.45-.928 1.487-1.306 3.25-1.07 4.97.28 2.03 1.258 3.81 2.76 5.06.945.79 2.1 1.34 3.36 1.59.38.07.76.11 1.15.11.83 0 1.65-.24 2.37-.68 1.76-1.07 2.9-2.9 3.4-5.02.1-.41.17-.83.2-1.26-.06.02-.12.03-.18.04-1.2.3-2.52.02-3.62-.77-1.3-1-2.13-2.5-2.3-4.1-.14-1.26.32-2.5.12-3.76z"></path>
+</svg>
+</a>
+</div>
+</div>
+</div>
+<div class="mt-6 text-center">
+<p class="text-sm text-text-light">
+                Don't have an account?
+                <a class="font-medium text-primary hover:text-primary/90" href="#">Sign up</a>
+</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

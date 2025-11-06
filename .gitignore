@@ -42,3 +42,11 @@ yarn-error.*
 
 # env files
 .env
+.env.docker
+
+# Backend
+backend/.env
+backend/node_modules/
+backend/npm-debug.*
+backend/logs/
+backend/*.log

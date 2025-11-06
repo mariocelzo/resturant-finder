@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/slider": "^5.0.1",
@@ -17,20 +18,26 @@
     "@react-navigation/stack": "^7.4.8",
     "@supabase/supabase-js": "^2.57.4",
     "expo": "~54.0.7",
+    "expo-auth-session": "^7.0.8",
     "expo-blur": "^15.0.7",
     "expo-constants": "^18.0.8",
+    "expo-crypto": "^15.0.7",
     "expo-image-picker": "^15.1.0",
     "expo-linear-gradient": "^15.0.7",
     "expo-location": "^19.0.7",
     "expo-status-bar": "~3.0.8",
+    "expo-web-browser": "^15.0.8",
     "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-native": "0.81.4",
     "react-native-elements": "^3.4.3",
     "react-native-maps": "1.20.1",
     "react-native-vector-icons": "^10.3.0",
+    "react-native-web": "^0.21.0",
     "vector-icons": "^0.1.0"
   },
   "devDependencies": {
+    "@types/google.maps": "^3.58.1",
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
   },
