@@ -5,10 +5,10 @@ const rateLimit = require('express-rate-limit');
  * Limita il numero di richieste per IP
  */
 
-// Rate limiter generale - 100 richieste per 15 minuti
+// Rate limiter generale - 500 richieste per 15 minuti (per testing/development)
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minuti
-  max: 100, // Limite di 100 richieste per finestra
+  max: 500, // Limite di 500 richieste per finestra
   message: {
     error: 'Troppe richieste da questo IP, riprova tra 15 minuti'
   },
@@ -16,10 +16,11 @@ const generalLimiter = rateLimit({
   legacyHeaders: false, // Disabilita gli headers `X-RateLimit-*`
 });
 
-// Rate limiter più restrittivo per chiamate API esterne - 50 richieste per 15 minuti
+// Rate limiter per API esterne - 300 richieste per 15 minuti (più permissivo per testing)
+// Nota: Google Places API ha un limite di 1000 richieste al giorno, quindi 300/15min è sicuro
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minuti
-  max: 50, // Limite di 50 richieste per finestra
+  max: 300, // Limite di 300 richieste per finestra
   message: {
     error: 'Troppe richieste alle API esterne, riprova tra 15 minuti'
   },
