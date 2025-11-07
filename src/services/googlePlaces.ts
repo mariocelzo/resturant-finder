@@ -1,3 +1,26 @@
+/**
+ * Google Places Service
+ *
+ * Questo servizio supporta due modalità:
+ * 1. Proxy Mode (CONSIGLIATO): Usa il backend Railway per proteggere le API keys
+ *    - Attiva con: EXPO_PUBLIC_USE_BACKEND_PROXY=true
+ * 2. Direct Mode: Chiama direttamente Google Places API
+ *    - Richiede: EXPO_PUBLIC_GOOGLE_PLACES_API_KEY
+ */
+
+// Controlla se usare il backend proxy
+const USE_PROXY = process.env.EXPO_PUBLIC_USE_BACKEND_PROXY === 'true';
+
+// Importa le funzioni del proxy
+import * as ProxyService from './googlePlacesProxy';
+
+// Log della modalità attiva al caricamento
+if (USE_PROXY) {
+  console.log('🚂 Google Places Service: Usando backend Railway (API keys protette)');
+} else {
+  console.log('⚠️  Google Places Service: Usando chiamate dirette (API key nel codice)');
+}
+
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
 const _nearbyCache: Map<string, { ts: number; data: Restaurant[] }> = new Map();
 const _inflight: Map<string, Promise<Restaurant[]>> = new Map();
@@ -89,6 +112,13 @@ export const searchNearbyRestaurants = async (
   radius: number = 2000,
   maxResults: number = 60
 ): Promise<Restaurant[]> => {
+  // Se il proxy è abilitato, usa il backend Railway
+  if (USE_PROXY) {
+    console.log('🚂 Routing to Railway backend proxy');
+    return ProxyService.searchNearbyRestaurants(latitude, longitude, radius, maxResults);
+  }
+
+  // Altrimenti usa le chiamate dirette a Google Places API
   const key = makeKey(latitude, longitude, radius, maxResults);
   const now = Date.now();
   const cached = _nearbyCache.get(key);
@@ -223,6 +253,13 @@ export interface GeocodedLocation {
 export const geocodeLocation = async (query: string): Promise<GeocodedLocation | null> => {
   if (!query || !query.trim()) return null;
 
+  // Se il proxy è abilitato, usa il backend Railway
+  if (USE_PROXY) {
+    console.log('🚂 Routing geocodeLocation to Railway backend proxy');
+    return ProxyService.geocodeAddress(query);
+  }
+
+  // Altrimenti usa le chiamate dirette a Google Places API
   if (!GOOGLE_API_KEY) {
     console.log('📄 GEOCODING: API Key mancante, geocoding non disponibile');
     return null;
@@ -254,10 +291,19 @@ export interface PlaceSuggestion {
 }
 
 export const placesAutocomplete = async (query: string): Promise<PlaceSuggestion[]> => {
+  if (!query || !query.trim()) return [];
+
+  // Se il proxy è abilitato, usa il backend Railway
+  if (USE_PROXY) {
+    console.log('🚂 Routing placesAutocomplete to Railway backend proxy');
+    return ProxyService.autocompleteAddress(query);
+  }
+
+  // Altrimenti usa le chiamate dirette a Google Places API
   if (!GOOGLE_API_KEY) {
     return [];
   }
-  if (!query || !query.trim()) return [];
+
   const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${GOOGLE_API_KEY}`;
   try {
     const res = await fetch(url);
@@ -271,6 +317,13 @@ export const placesAutocomplete = async (query: string): Promise<PlaceSuggestion
 };
 
 export const getPlaceDetails = async (placeId: string): Promise<GeocodedLocation | null> => {
+  // Se il proxy è abilitato, usa il backend Railway
+  if (USE_PROXY) {
+    console.log('🚂 Routing getPlaceDetails to Railway backend proxy');
+    return ProxyService.getRestaurantDetails(placeId);
+  }
+
+  // Altrimenti usa le chiamate dirette a Google Places API
   if (!GOOGLE_API_KEY) return null;
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry/location,formatted_address&key=${GOOGLE_API_KEY}`;
   try {
