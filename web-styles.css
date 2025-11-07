@@ -1,0 +1,60 @@
+/* Stili globali per la versione web */
+
+/* Fix scroll per React Native Web */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* ScrollView su web deve essere scrollabile */
+[data-focusable="true"] {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth scroll */
+* {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Desktop: layout più largo e centrato */
+@media (min-width: 1024px) {
+  body {
+    background-color: #f5f5f5;
+  }
+
+  /* Contenitore principale centrato */
+  #root > div {
+    max-width: 1400px;
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  }
+}
+
+/* Nasconde scrollbar ma mantiene funzionalità */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.3);
+}

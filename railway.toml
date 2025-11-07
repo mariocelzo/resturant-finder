@@ -1,0 +1,11 @@
+# Configurazione Railway per NearBite Backend
+# Questo file dice a Railway di deployare il backend dalla cartella /backend
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd backend && npm install"
+
+[deploy]
+startCommand = "cd backend && npm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

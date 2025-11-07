@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Linking,
   Alert,
@@ -12,6 +11,7 @@ import {
   Platform,
   Share
 } from 'react-native';
+import ScrollView from '../components/ScrollView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Restaurant } from '../services/googlePlaces';
 import { fetchPlaceReviews, PlaceReview } from '../services/googlePlaces';
@@ -186,7 +186,15 @@ export default function RestaurantDetailScreen() {
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[
+        styles.container,
+        { backgroundColor: theme.background },
+        Platform.OS === 'web' && { height: '100vh', overflow: 'auto' }
+      ]}
+      contentContainerStyle={Platform.OS === 'web' ? { minHeight: '100%' } : { flexGrow: 1 }}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header con immagine */}
       <View style={styles.headerContainer}>
         {restaurant.photoUrl ? (
