@@ -75,6 +75,43 @@ export class ReviewsService {
     }
   }
 
+  static async getUserReviews(userId: string): Promise<UserReview[]> {
+    try {
+      const { data, error } = await supabase
+        .from('user_reviews')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ Supabase getUserReviews error', error);
+        return [];
+      }
+      return (data || []).map(this.mapFromDb);
+    } catch (e) {
+      console.error('❌ getUserReviews error', e);
+      return [];
+    }
+  }
+
+  static async deleteReview(reviewId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_reviews')
+        .delete()
+        .eq('id', reviewId);
+      
+      if (error) {
+        console.error('❌ deleteReview error', error);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('❌ deleteReview error', e);
+      return false;
+    }
+  }
+
   private static mapFromDb(row: any): UserReview {
     return {
       id: row.id,

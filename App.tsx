@@ -18,6 +18,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import AddReviewScreen from './src/screens/AddReviewScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import SplashScreen from './src/screens/SplashScreen';
+import MyReviewsScreen from './src/screens/MyReviewsScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 // Definiamo i tipi per la navigazione
 export type RootStackParamList = {
@@ -28,6 +30,8 @@ export type RootStackParamList = {
   Auth: undefined;
   ManageLocations: undefined;
   AddReview: { placeId: string; restaurantName: string; cuisineType?: string; priceLevel?: number };
+  MyReviews: undefined;
+  Notifications: undefined;
 };
 
 export type TabParamList = {
@@ -293,6 +297,16 @@ function RootNavigator() {
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
         }}
+      />
+      <Stack.Screen
+        name="MyReviews"
+        component={MyReviewsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
